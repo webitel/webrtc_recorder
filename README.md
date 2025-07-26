@@ -61,9 +61,53 @@
 
 3.  **Запустіть сервіс:**
     ```bash
-    go run main.go server
+    go run main.go [command options]
     ```
     Або за допомогою змінних середовища.
+
+### Параметри запуску
+
+Параметри можна передавати як через прапори командного рядка, так і через змінні середовища.
+
+#### **Cache**
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
+| --- | --- | --- | --- |
+| `--cache-dir` | `CACHE_TEMP_DIR` | Директорія для тимчасового кешу файлів | `./temp` |
+
+#### **Database**
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
+| --- | --- | --- | --- |
+| `--postgresql-dsn` | `DATA_SOURCE` | Рядок підключення до PostgreSQL | `postgres://postgres:postgres@localhost:5432/webitel?sslmode=disable` |
+
+#### **Server**
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
+| --- | --- | --- | --- |
+| `--bind-address`, `-b` | `BIND_ADDRESS` | Адреса для внутрішніх комунікацій кластера | `localhost:50011` |
+| `--consul-discovery`, `-c` | `CONSUL` | Адреса service discovery (Consul) | `127.0.0.1:8500` |
+| `--service-id`, `-i` | `ID` | Ідентифікатор сервісу | `1` |
+
+#### **Transcoding**
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
+| --- | --- | --- | --- |
+| `--transcoding-max-retry` | `TRANSCODING_MAX_RETRY` | Кількість повторних спроб транскодування | `10` |
+| `--transcoding-queue` | `TRANSCODING_QUEUE` | Розмір черги на транскодування | `1` |
+| `--transcoding-workers` | `TRANSCODING_WORKERS` | Кількість воркерів для транскодування | `4` |
+
+#### **Uploader**
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
+| --- | --- | --- | --- |
+| `--uploader-max-retry` | `UPLOADER_MAX_RETRY` | Кількість повторних спроб завантаження | `20` |
+| `--uploader-queue` | `UPLOADER_QUEUE` | Розмір черги на завантаження | `2` |
+| `--uploader-workers` | `UPLOADER_WORKERS` | Кількість воркерів для завантаження | `10` |
+
+#### **WebRTC**
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
+| --- | --- | --- | --- |
+| `--webrtc-codecs` | `WEBRTC_CODECS` | Підтримувані кодеки | `video/VP9`, `video/H264` |
+| `--webrtc-ice-disconnect-timeout` | `WEBRTC_ICE_DISCONNECT_TIMEOUT` | Таймаут роз'єднання ICE | `5s` |
+| `--webrtc-ice-failed-timeout` | `WEBRTC_ICE_FAILED_TIMEOUT` | Таймаут помилки ICE | `15s` |
+| `--webrtc-ice-keepalive-timeout` | `WEBRTC_ICE_KEEPALIVE_TIMEOUT` | Таймаут підтримки з'єднання ICE | `5s` |
+| `--webrtc-udp-port-range` | `WEBRTC_UDP_PORT_RANGE` | Діапазон UDP портів | `10000-20000` |
 
 ## API
 
