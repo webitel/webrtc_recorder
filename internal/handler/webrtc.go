@@ -1,0 +1,95 @@
+package handler
+
+import (
+	"context"
+	spb "github.com/webitel/webrtc_recorder/gen/storage"
+	"github.com/webitel/webrtc_recorder/gen/webrtc_recorder"
+	"github.com/webitel/webrtc_recorder/infra/grpc_srv"
+	webrtci "github.com/webitel/webrtc_recorder/infra/webrtc"
+	"github.com/webitel/webrtc_recorder/internal/model"
+	"github.com/webitel/wlog"
+)
+
+type WebRTCRecorderService interface {
+	UploadP2PVideo(sdpOffer string, file model.File, ice []webrtci.ICEServer) (model.RtcUploadVideoSession, error)
+	CloseP2P(id string) error
+	RenegotiateP2P(id string, sdpOffer string) (model.RtcUploadVideoSession, error)
+}
+
+type WebRTCRecorder struct {
+	log *wlog.Logger
+	svc WebRTCRecorderService
+	webrtc_recorder.UnimplementedWebRTCServiceServer
+}
+
+func NewWebRTCRecorder(svc WebRTCRecorderService, s *grpc_srv.Server, l *wlog.Logger) *WebRTCRecorder {
+
+	h := &WebRTCRecorder{
+		svc: svc,
+		log: l,
+	}
+	webrtc_recorder.RegisterWebRTCServiceServer(s, h)
+
+	return h
+}
+
+func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder.UploadP2PVideoRequest) (*webrtc_recorder.UploadP2PVideoResponse, error) {
+
+	authUser, err := grpc_srv.SessionFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	i := make([]webrtci.ICEServer, 0, len(in.IceServers))
+	for _, server := range in.IceServers {
+		i = append(i, webrtci.ICEServer{
+			URLs:           server.GetUrls(),
+			Username:       server.GetUsername(),
+			Credential:     server.GetCredential(),
+			CredentialType: 0, // TODO
+		})
+	}
+	name := in.Name
+	if name == "" {
+		name = model.NewId()
+	}
+
+	file := model.File{
+		Name:       name,
+		Uuid:       in.GetUuid(),
+		DomainId:   int(authUser.DomainId),
+		UploadedBy: int(authUser.UserId),
+		CreatedAt:  model.GetMillis(),
+		Channel:    int(spb.UploadFileChannel_ScreenSharingChannel),
+	}
+
+	sess, err := w.svc.UploadP2PVideo(in.SdpOffer, file, i)
+	if err != nil {
+		return nil, err
+	}
+
+	return &webrtc_recorder.UploadP2PVideoResponse{
+		SdpAnswer: sess.AnswerSDP(),
+		Id:        sess.Id(),
+	}, nil
+}
+
+func (w *WebRTCRecorder) StopP2PVideo(ctx context.Context, in *webrtc_recorder.StopP2PVideoRequest) (*webrtc_recorder.StopP2PVideoResponse, error) {
+	e := w.svc.CloseP2P(in.Id)
+	if e != nil {
+		return nil, e
+	}
+
+	return &webrtc_recorder.StopP2PVideoResponse{}, nil
+}
+
+func (w *WebRTCRecorder) RenegotiateP2PVideo(ctx context.Context, in *webrtc_recorder.RenegotiateP2PVideoRequest) (*webrtc_recorder.RenegotiateP2PVideoResponse, error) {
+	s, err := w.svc.RenegotiateP2P(in.Id, in.SdpOffer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &webrtc_recorder.RenegotiateP2PVideoResponse{
+		SdpAnswer: s.AnswerSDP(),
+	}, nil
+}

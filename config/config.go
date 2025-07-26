@@ -1,0 +1,57 @@
+package config
+
+import (
+	"github.com/urfave/cli/v2"
+	"time"
+)
+
+type Config struct {
+	TempDir     string
+	Service     Service
+	Log         LogSettings
+	SqlSettings SqlSettings
+	Rtc         RtcSettings
+	Uploader    UploaderSettings
+	Transcoding TranscodingSettings
+}
+
+type TranscodingSettings struct {
+	Workers  int
+	Queue    int
+	MaxRetry int
+}
+
+type UploaderSettings struct {
+	Workers  int
+	Queue    int
+	MaxRetry int
+}
+
+type SqlSettings struct {
+	DSN string
+}
+
+type Service struct {
+	Id      string
+	Address string
+	Consul  string
+}
+
+type RtcSettings struct {
+	Codecs cli.StringSlice
+	//Network cli.StringSlice
+	Ice struct {
+		DisconnectedTimeout time.Duration
+		FailedTimeout       time.Duration
+		KeepAliveInterval   time.Duration
+	}
+	EphemeralUDPPortRange string // 10000-20000
+}
+
+type LogSettings struct {
+	Lvl     string
+	Json    bool
+	Otel    bool
+	File    string
+	Console bool
+}

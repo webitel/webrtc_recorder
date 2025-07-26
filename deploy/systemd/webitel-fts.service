@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+EnvironmentFile=/etc/default/webrtc_recorder.env
+TimeoutStartSec=0
+ExecStart=/usr/local/bin/webrtc_recorder server
+
+[Install]
+WantedBy=default.target
