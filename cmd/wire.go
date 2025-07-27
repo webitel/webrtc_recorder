@@ -20,7 +20,7 @@ var wireAppHandlersSet = wire.NewSet(
 	store.NewSessionStore,
 	store.NewFileJobStore,
 
-	service.NewCacheService,
+	service.NewTempFileService,
 	service.NewUploader,
 	service.NewTranscoding, wire.Bind(new(service.FileJobStore), new(*store.FileJobStore)),
 

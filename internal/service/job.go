@@ -7,10 +7,10 @@ import (
 )
 
 type jobHandler struct {
-	jobStore  FileJobStore
-	ctx       context.Context
-	log       *wlog.Logger
-	fileCache *CacheService
+	jobStore FileJobStore
+	ctx      context.Context
+	log      *wlog.Logger
+	tempFile *TempFileService
 }
 
 type baseJob struct {
@@ -36,7 +36,7 @@ func (svc *jobHandler) errorJob(j *baseJob, maxRetry int, err error) {
 }
 
 func (svc *jobHandler) cleanup(j *baseJob) {
-	err := svc.fileCache.DeleteFile(j.job.File)
+	err := svc.tempFile.DeleteFile(j.job.File)
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}

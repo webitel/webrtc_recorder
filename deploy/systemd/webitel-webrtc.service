@@ -1,4 +1,5 @@
 [Unit]
+Description=WebRTC recorder startup process
 After=network.target
 
 [Service]

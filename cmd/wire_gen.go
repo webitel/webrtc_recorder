@@ -97,13 +97,13 @@ func initAppHandlers(contextContext context.Context, cmdResources *resources) (*
 	api := cmdResources.webrtc
 	sessionStore := store.NewSessionStore(logger)
 	configConfig := cmdResources.cfg
-	cacheService := service.NewCacheService(configConfig)
+	tempFileService := service.NewTempFileService(configConfig)
 	sqlStore := cmdResources.store
 	fileJobStore := store.NewFileJobStore(contextContext, configConfig, sqlStore)
 	storage := cmdResources.storage
-	uploader := service.NewUploader(contextContext, configConfig, logger, fileJobStore, cacheService, storage)
-	transcoding := service.NewTranscoding(contextContext, configConfig, logger, fileJobStore, cacheService, uploader)
-	webRtcRecorder := service.NewWebRtcRecorder(logger, api, sessionStore, cacheService, transcoding)
+	uploader := service.NewUploader(contextContext, configConfig, logger, fileJobStore, tempFileService, storage)
+	transcoding := service.NewTranscoding(contextContext, configConfig, logger, fileJobStore, tempFileService, uploader)
+	webRtcRecorder := service.NewWebRtcRecorder(logger, api, sessionStore, tempFileService, transcoding)
 	server := cmdResources.grpcSrv
 	webRTCRecorder := handler.NewWebRTCRecorder(webRtcRecorder, server, logger)
 	cmdHandlers := &handlers{
@@ -118,4 +118,4 @@ var wireAppResourceSet = wire.NewSet(
 	log, grpcSrv, setupCluster, setupSql, webrtcApi, authManager, storageClient,
 )
 
-var wireAppHandlersSet = wire.NewSet(store.NewSessionStore, store.NewFileJobStore, service.NewCacheService, service.NewUploader, service.NewTranscoding, wire.Bind(new(service.FileJobStore), new(*store.FileJobStore)), service.NewWebRtcRecorder, wire.Bind(new(service.SessionStore), new(*store.SessionStore)), handler.NewWebRTCRecorder, wire.Bind(new(handler.WebRTCRecorderService), new(*service.WebRtcRecorder)))
+var wireAppHandlersSet = wire.NewSet(store.NewSessionStore, store.NewFileJobStore, service.NewTempFileService, service.NewUploader, service.NewTranscoding, wire.Bind(new(service.FileJobStore), new(*store.FileJobStore)), service.NewWebRtcRecorder, wire.Bind(new(service.SessionStore), new(*store.SessionStore)), handler.NewWebRTCRecorder, wire.Bind(new(handler.WebRTCRecorderService), new(*service.WebRtcRecorder)))

@@ -28,13 +28,13 @@ type UploadJob struct {
 	*baseJob
 }
 
-func NewUploader(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, fileCache *CacheService, st *storage.Storage) *Uploader {
+func NewUploader(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, tmp *TempFileService, st *storage.Storage) *Uploader {
 	u := &Uploader{
 		jobHandler: jobHandler{
-			log:       log.With(wlog.String("service", "uploader")),
-			fileCache: fileCache,
-			jobStore:  fjs,
-			ctx:       ctx,
+			log:      log.With(wlog.String("service", "uploader")),
+			tempFile: tmp,
+			jobStore: fjs,
+			ctx:      ctx,
 		},
 		storage:  st,
 		maxRetry: cfg.Uploader.MaxRetry,
@@ -99,7 +99,7 @@ func (j *UploadJob) Execute() {
 			j.svc.cleanup(j.baseJob)
 		}
 	}()
-	src, err = j.svc.fileCache.NewReader(*j.job.File)
+	src, err = j.svc.tempFile.NewReader(*j.job.File)
 	if err != nil {
 		return
 	}

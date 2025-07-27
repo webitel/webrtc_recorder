@@ -21,15 +21,15 @@ type WebRtcRecorder struct {
 	sessions SessionStore
 
 	transcoding *Transcoding
-	cache       *CacheService
+	temp        *TempFileService
 }
 
-func NewWebRtcRecorder(log *wlog.Logger, api webrtci.API, sess SessionStore, cache *CacheService, tr *Transcoding) *WebRtcRecorder {
+func NewWebRtcRecorder(log *wlog.Logger, api webrtci.API, sess SessionStore, tmp *TempFileService, tr *Transcoding) *WebRtcRecorder {
 	return &WebRtcRecorder{
 		api:         api,
 		log:         log.With(wlog.String("service", "webrtc")),
 		sessions:    sess,
-		cache:       cache,
+		temp:        tmp,
 		transcoding: tr,
 	}
 }
@@ -53,7 +53,7 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 	}
 
 	writeFile := &file
-	writer, err = svc.cache.NewWriter(writeFile, "raw")
+	writer, err = svc.temp.NewWriter(writeFile, "raw")
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadVideoSession) {
 	err := svc.transcoding.CreateJob(s.file)
 	if err != nil {
 		s.log.Error(err.Error(), wlog.Err(err))
-		err = svc.cache.DeleteFile(s.file)
+		err = svc.temp.DeleteFile(s.file)
 		if err != nil {
 			s.log.Error(err.Error(), wlog.Err(err))
 		}

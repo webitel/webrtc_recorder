@@ -51,6 +51,26 @@ func NewTranscoding(src io.ReadCloser, writer io.Writer) (*Transcoding, error) {
 	}, nil
 }
 
+func TranscodingByPath(src, dst string) error {
+	args := []string{
+		"-nostdin",
+		"-fflags", "+genpts", // генеруємо PTS, якщо нема
+		"-i", src,
+		"-f", "mp4", // ⬅️ саме mkv
+		"-movflags", "frag_keyframe+empty_moov",
+		dst,
+	}
+
+	cmd := exec.Command("ffmpeg", args...)
+	//cmd.Stderr = os.Stderr // bind log stream to stderr
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	return cmd.Wait()
+}
+
 func (t *Transcoding) Start() error {
 	return t.cmd.Start()
 }

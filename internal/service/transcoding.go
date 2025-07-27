@@ -6,7 +6,6 @@ import (
 	"github.com/webitel/webrtc_recorder/internal/model"
 	"github.com/webitel/webrtc_recorder/internal/utils"
 	"github.com/webitel/wlog"
-	"io"
 	"time"
 )
 
@@ -33,13 +32,13 @@ type transcodingJob struct {
 	*baseJob
 }
 
-func NewTranscoding(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, cache *CacheService, upl *Uploader) *Transcoding {
+func NewTranscoding(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, tmp *TempFileService, upl *Uploader) *Transcoding {
 	tr := &Transcoding{
 		jobHandler: jobHandler{
-			ctx:       ctx,
-			jobStore:  fjs,
-			log:       log,
-			fileCache: cache,
+			ctx:      ctx,
+			jobStore: fjs,
+			log:      log,
+			tempFile: tmp,
 		},
 		uploader: upl,
 		maxRetry: cfg.Transcoding.MaxRetry,
@@ -58,9 +57,8 @@ func (svc *Transcoding) CreateJob(f *model.File) error {
 
 func (svc *Transcoding) successJob(j *transcodingJob, trFile *model.File) {
 	var err error
-	j.log.Debug("success job")
 
-	if err = svc.fileCache.DeleteFile(j.job.File); err != nil {
+	if err = svc.tempFile.DeleteFile(j.job.File); err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}
 
@@ -115,44 +113,28 @@ func (svc *Transcoding) listen() {
 
 func (j *transcodingJob) Execute() {
 	j.log.Debug("execute")
-	var src io.ReadCloser
-	var dst io.WriteCloser
 	var err error
 	mp4File := *j.job.File
 	mp4File.Path = ""
 	mp4File.MimeType = "video/mp4" // TODO
 
+	now := time.Now()
+
 	defer func() {
 		if err != nil {
 			j.svc.errorJob(j.baseJob, j.svc.maxRetry, err)
 		} else {
+			j.log.Debug("success job", wlog.Duration("duration", time.Since(now)))
 			j.svc.successJob(j, &mp4File)
 		}
 	}()
 
-	src, err = j.svc.fileCache.NewReader(*j.job.File)
-	if err != nil {
-		return
-	}
-	defer src.Close()
-
-	dst, err = j.svc.fileCache.NewWriter(&mp4File, "mp4")
-	if err != nil {
-		return
-	}
-	defer dst.Close()
-
-	tr, err := utils.NewTranscoding(src, dst)
+	err = j.svc.tempFile.NewFilePath(&mp4File, "mp4")
 	if err != nil {
 		return
 	}
 
-	err = tr.Start()
-	if err != nil {
-		return
-	}
-
-	err = tr.Wait()
+	err = utils.TranscodingByPath(j.job.File.Path, mp4File.Path)
 	if err != nil {
 		return
 	}

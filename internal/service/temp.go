@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 )
 
-type CacheService struct {
+type TempFileService struct {
 	dir string
 }
 
-func NewCacheService(cfg *config.Config) *CacheService {
+func NewTempFileService(cfg *config.Config) *TempFileService {
 	if _, err := os.Stat(cfg.TempDir); os.IsNotExist(err) {
 		err = os.MkdirAll(cfg.TempDir, 0755)
 		if err != nil {
@@ -28,12 +28,12 @@ func NewCacheService(cfg *config.Config) *CacheService {
 		panic(err)
 	}
 
-	return &CacheService{
+	return &TempFileService{
 		dir: dir,
 	}
 }
 
-func (svc *CacheService) DeleteFile(file *model.File) error {
+func (svc *TempFileService) DeleteFile(file *model.File) error {
 	if file.Path == "" {
 		return errors.New("file path is empty")
 	}
@@ -41,18 +41,27 @@ func (svc *CacheService) DeleteFile(file *model.File) error {
 	return os.Remove(file.Path)
 }
 
-func (svc *CacheService) NewReader(file model.File) (io.ReadCloser, error) {
+func (svc *TempFileService) NewReader(file model.File) (io.ReadCloser, error) {
 	return os.Open(file.Path)
 }
 
-func (svc *CacheService) NewWriter(file *model.File, ext string) (io.WriteCloser, error) {
+func (svc *TempFileService) NewWriter(file *model.File, ext string) (io.WriteCloser, error) {
+	err := svc.NewFilePath(file, ext)
+	if err != nil {
+		return nil, err
+	}
+
+	return os.OpenFile(file.Path, os.O_WRONLY|os.O_CREATE, 0644)
+}
+
+func (svc *TempFileService) NewFilePath(file *model.File, ext string) error {
 	if file.Path != "" {
-		return nil, errors.New("file path is no empty")
+		return errors.New("file path is no empty")
 	}
 	name := model.NewId()
 	if ext != "" {
 		name += "." + ext
 	}
 	file.Path = path.Join(svc.dir, fmt.Sprintf("%s", name))
-	return os.OpenFile(file.Path, os.O_WRONLY|os.O_CREATE, 0644)
+	return nil
 }
