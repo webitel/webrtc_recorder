@@ -99,7 +99,7 @@ func initAppHandlers(contextContext context.Context, cmdResources *resources) (*
 	configConfig := cmdResources.cfg
 	tempFileService := service.NewTempFileService(configConfig)
 	sqlStore := cmdResources.store
-	fileJobStore := store.NewFileJobStore(contextContext, configConfig, sqlStore)
+	fileJobStore := store.NewFileJobStore(contextContext, logger, configConfig, sqlStore)
 	storage := cmdResources.storage
 	uploader := service.NewUploader(contextContext, configConfig, logger, fileJobStore, tempFileService, storage)
 	transcoding := service.NewTranscoding(contextContext, configConfig, logger, fileJobStore, tempFileService, uploader)

@@ -16,16 +16,17 @@ import (
 )
 
 type RtcUploadVideoSession struct {
-	id      string
-	answer  *webrtc.SessionDescription
-	offer   webrtc.SessionDescription
-	pc      *webrtc.PeerConnection
-	log     *wlog.Logger
-	file    *model.File
-	cancel  context.CancelFunc
-	ctx     context.Context
-	rec     *WebRtcRecorder
-	encoder media.Writer
+	id       string
+	answer   *webrtc.SessionDescription
+	offer    webrtc.SessionDescription
+	pc       *webrtc.PeerConnection
+	log      *wlog.Logger
+	file     *model.File
+	cancel   context.CancelFunc
+	ctx      context.Context
+	rec      *WebRtcRecorder
+	encoder  media.Writer
+	countPkg int
 
 	writer io.WriteCloser
 }
@@ -114,6 +115,12 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 						s.log.Error(fmt.Sprintf("unhandled error reading rtp packet: %s", err))
 					}
 					return
+				}
+
+				s.countPkg++
+
+				if s.countPkg%1000 == 0 {
+					s.log.Debug(fmt.Sprintf("receive rtc packet count %d", s.countPkg))
 				}
 
 				builder.Push(rtpPacket)

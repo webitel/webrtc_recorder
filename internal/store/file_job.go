@@ -5,20 +5,30 @@ import (
 	"github.com/webitel/webrtc_recorder/config"
 	"github.com/webitel/webrtc_recorder/infra/sql"
 	"github.com/webitel/webrtc_recorder/internal/model"
+	"github.com/webitel/wlog"
 )
 
 type FileJobStore struct {
 	db       sql.Store
 	ctx      context.Context
 	instance string
+	log      *wlog.Logger
 }
 
-func NewFileJobStore(ctx context.Context, cfg *config.Config, db sql.Store) *FileJobStore {
-	return &FileJobStore{
+func NewFileJobStore(ctx context.Context, log *wlog.Logger, cfg *config.Config, db sql.Store) *FileJobStore {
+	fjs := &FileJobStore{
 		db:       db,
 		ctx:      ctx,
 		instance: cfg.Service.Id,
+		log:      log.With(wlog.String("store", "file_jobs")),
 	}
+
+	err := fjs.Reset()
+	if err != nil {
+		fjs.log.Error(err.Error(), wlog.Err(err))
+	}
+
+	return fjs
 }
 
 func (s *FileJobStore) Create(jobType string, cfg *model.JobConfig, f *model.File) error {
