@@ -151,12 +151,14 @@ func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrt
 func (s *RtcUploadVideoSession) close() {
 	s.cancel()
 
-	if s.writer != nil {
-		// todo panic; ref
+	if s.encoder != nil {
 		if closeErr := s.encoder.Close(); closeErr != nil {
 			s.log.Error(fmt.Sprintf("closing encoder: %s", closeErr.Error()))
 		}
+		s.encoder = nil
+	}
 
+	if s.writer != nil {
 		if closeErr := s.writer.Close(); closeErr != nil {
 			s.log.Error(fmt.Sprintf("closing writer: %s", closeErr.Error()))
 		}
