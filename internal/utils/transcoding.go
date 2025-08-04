@@ -54,10 +54,12 @@ func NewTranscoding(src io.ReadCloser, writer io.Writer) (*Transcoding, error) {
 func TranscodingByPath(src, dst string) error {
 	args := []string{
 		"-nostdin",
-		"-fflags", "+genpts", // генеруємо PTS, якщо нема
 		"-i", src,
-		"-f", "mp4", // ⬅️ саме mkv
-		"-movflags", "frag_keyframe+empty_moov",
+		"-vf", "scale=1920:1080",
+		"-c:v", "libx264",
+		"-tune", "animation",
+		"-preset", "fast",
+		"-f", "mp4",
 		dst,
 	}
 
