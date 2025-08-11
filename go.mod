@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/jpillora/backoff v1.0.0
 	github.com/pion/interceptor v0.1.40
-	github.com/pion/rtp v1.8.20
+	github.com/pion/rtp v1.8.21
 	github.com/pion/webrtc/v4 v4.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
