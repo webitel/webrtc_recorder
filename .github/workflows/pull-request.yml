@@ -1,0 +1,24 @@
+name: PR (${{ vars.SERVICE_NAME }})
+
+on:
+  pull_request:
+
+permissions: { contents: read }
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Prepare
+    uses: webitel/reusable-workflows/.github/workflows/golang-prepare.yml@bbc62c74ef328e4bae45d28b859b2c8cea859bb5
+    with: { only-dependencies: true }
+
+  checks:
+    name: Checks
+    needs: [ prepare ]
+    uses: webitel/reusable-workflows/.github/workflows/golang-checks.yml@bbc62c74ef328e4bae45d28b859b2c8cea859bb5
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
