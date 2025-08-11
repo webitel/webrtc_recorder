@@ -38,7 +38,7 @@ func Run() error {
 				Usage:       "application log json",
 				Value:       false,
 				EnvVars:     []string{"LOG_JSON"},
-				Destination: &cfg.Log.Json,
+				Destination: &cfg.Log.JSON,
 			},
 			&cli.BoolFlag{
 				Name:        "log-otel",

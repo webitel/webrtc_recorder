@@ -53,14 +53,14 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 
 	name := in.GetName()
 	if name == "" {
-		name = model.NewId()
+		name = model.NewID()
 	}
 
 	file := model.File{
 		Name:       name,
-		Uuid:       in.GetUuid(),
-		DomainId:   int(authUser.DomainId),
-		UploadedBy: int(authUser.UserId),
+		UUID:       in.GetUuid(),
+		DomainID:   int(authUser.DomainID),
+		UploadedBy: int(authUser.UserID),
 		CreatedAt:  model.GetMillis(),
 		Channel:    int(spb.UploadFileChannel_ScreenSharingChannel),
 	}
@@ -72,7 +72,7 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 
 	return &webrtc_recorder.UploadP2PVideoResponse{
 		SdpAnswer: sess.AnswerSDP(),
-		Id:        sess.Id(),
+		Id:        sess.ID(),
 	}, nil
 }
 

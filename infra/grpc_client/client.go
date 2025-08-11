@@ -18,7 +18,7 @@ const (
 
 type Client[T any] struct {
 	conn *grpc.ClientConn
-	Api  T
+	API  T
 }
 
 var conns sync.Map
@@ -47,7 +47,7 @@ func NewClient[T any](consulTarget, service string, api func(conn grpc.ClientCon
 
 	return &Client[T]{
 		conn: conn,
-		Api:  api(conn),
+		API:  api(conn),
 	}, nil
 }
 

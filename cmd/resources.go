@@ -84,7 +84,7 @@ func setupCluster(cfg *config.Config, srv *grpc_srv.Server, l *wlog.Logger) (*co
 	c := consul.NewCluster(model.ServiceName, cfg.Service.Consul, l)
 	host := srv.Host()
 
-	err := c.Start(cfg.Service.Id, host, srv.Port())
+	err := c.Start(cfg.Service.ID, host, srv.Port())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -94,8 +94,8 @@ func setupCluster(cfg *config.Config, srv *grpc_srv.Server, l *wlog.Logger) (*co
 	}, nil
 }
 
-func setupSql(ctx context.Context, log *wlog.Logger, cfg *config.Config) (sql.Store, func(), error) {
-	s, err := pgsql.New(ctx, cfg.SqlSettings.DSN, log)
+func setupSQL(ctx context.Context, log *wlog.Logger, cfg *config.Config) (sql.Store, func(), error) {
+	s, err := pgsql.New(ctx, cfg.SQLSettings.DSN, log)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -108,7 +108,7 @@ func setupSql(ctx context.Context, log *wlog.Logger, cfg *config.Config) (sql.St
 	}, nil
 }
 
-func webrtcApi(log *wlog.Logger, cfg *config.Config) (webrtc.API, func(), error) {
+func webrtcAPI(log *wlog.Logger, cfg *config.Config) (webrtc.API, func(), error) {
 	if len(cfg.Rtc.Codecs.Value()) == 0 {
 		return nil, nil, errors.New("webrtc codecs is empty")
 	}
@@ -125,7 +125,7 @@ func webrtcApi(log *wlog.Logger, cfg *config.Config) (webrtc.API, func(), error)
 		}
 	}
 
-	return webrtc.NewApi(log, &webrtc.Settings{
+	return webrtc.NewAPI(log, &webrtc.Settings{
 		Codecs: cfg.Rtc.Codecs.Value(),
 		ICE: &webrtc.ICESettings{
 			DisconnectedTimeout: cfg.Rtc.Ice.DisconnectedTimeout,

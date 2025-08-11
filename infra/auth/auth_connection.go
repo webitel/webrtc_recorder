@@ -24,7 +24,7 @@ const (
 func (am *authManager) ProductLimit(ctx context.Context, token, productName string) (int, error) {
 	outCtx := grpc_client.WithToken(ctx, token)
 
-	tenant, err := am.customer.Api.GetCustomer(outCtx, &api.GetCustomerRequest{})
+	tenant, err := am.customer.API.GetCustomer(outCtx, &api.GetCustomerRequest{})
 	if err != nil {
 		return 0, err
 	}
@@ -64,7 +64,7 @@ func (am *authManager) ProductLimit(ctx context.Context, token, productName stri
 func (am *authManager) GetSession(c context.Context, token string) (*Session, error) {
 	ctx := grpc_client.WithToken(c, token)
 
-	resp, err := am.auth.Api.UserInfo(ctx, &api.UserinfoRequest{})
+	resp, err := am.auth.API.UserInfo(ctx, &api.UserinfoRequest{})
 	if err != nil {
 		if status.Code(err) == codes.Unauthenticated {
 			return nil, ErrStatusUnauthenticated
@@ -78,13 +78,13 @@ func (am *authManager) GetSession(c context.Context, token string) (*Session, er
 	}
 
 	session := &Session{
-		Id:         token,
-		UserId:     resp.GetUserId(),
-		DomainId:   resp.GetDc(),
+		ID:         token,
+		UserID:     resp.GetUserId(),
+		DomainID:   resp.GetDc(),
 		DomainName: resp.GetDomain(),
 		Expire:     resp.GetExpiresAt(),
 		Token:      token,
-		RoleIds:    transformRoles(resp.GetUserId(), resp.GetRoles()), // /FIXME
+		RoleIDs:    transformRoles(resp.GetUserId(), resp.GetRoles()), // /FIXME
 		Scopes:     transformScopes(resp.GetScope()),
 		actions:    make([]string, 0, 1),
 		Name:       resp.GetName(),
@@ -136,7 +136,7 @@ func transformScopes(src []*api.Objclass) []SessionPermission {
 	for _, v := range src {
 		access, _ = parseAccess(v.GetAccess()) //
 		dst = append(dst, SessionPermission{
-			Id:   int(v.GetId()),
+			ID:   int(v.GetId()),
 			Name: v.GetClass(),
 			// Abac:   v.Abac,
 			Obac:   v.GetObac(),
@@ -240,10 +240,10 @@ func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 	return validLicene, scope
 }
 
-func transformRoles(userId int64, src []*api.ObjectId) []int {
+func transformRoles(userID int64, src []*api.ObjectId) []int {
 	dst := make([]int, 0, len(src)+1)
 
-	dst = append(dst, int(userId))
+	dst = append(dst, int(userID))
 	for _, v := range src {
 		dst = append(dst, int(v.GetId()))
 	}

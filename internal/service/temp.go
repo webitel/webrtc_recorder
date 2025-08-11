@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -60,7 +59,7 @@ func (svc *TempFileService) NewFilePath(file *model.File, ext string) error {
 		return errors.New("file path is no empty")
 	}
 
-	name := model.NewId()
+	name := model.NewID()
 	if ext != "" {
 		name += "." + ext
 	}

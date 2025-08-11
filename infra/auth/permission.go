@@ -1,7 +1,7 @@
 package auth
 
 type SessionPermission struct {
-	Id   int    `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 	// Abac   bool   `json:"abac"`
 	Obac   bool   `json:"obac"`
@@ -38,7 +38,7 @@ func (p PermissionAccess) Name() string {
 }
 
 func (s *Session) Domain(_ int64) int64 {
-	return s.DomainId
+	return s.DomainID
 }
 
 func (s SessionPermission) CanCreate() bool {

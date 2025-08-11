@@ -108,7 +108,7 @@ func (svc *Transcoding) listen() {
 					baseJob: &baseJob{
 						job: job,
 						ctx: svc.ctx,
-						log: svc.log.With(wlog.Int("job_id", job.Id), wlog.String("job_type", job.Type),
+						log: svc.log.With(wlog.Int("job_id", job.ID), wlog.String("job_type", job.Type),
 							wlog.Int("attempt", job.Retry)),
 					},
 				})

@@ -81,7 +81,7 @@ func (svc *Uploader) listen() {
 					baseJob: &baseJob{
 						job: job,
 						ctx: svc.ctx,
-						log: svc.log.With(wlog.Int("job_id", job.Id), wlog.String("job_type", job.Type),
+						log: svc.log.With(wlog.Int("job_id", job.ID), wlog.String("job_type", job.Type),
 							wlog.Int("attempt", job.Retry)),
 					},
 				})
@@ -115,7 +115,7 @@ func (j *UploadJob) Execute() {
 	}
 	defer src.Close()
 
-	stream, err := j.svc.storage.Api().UploadFile(j.ctx)
+	stream, err := j.svc.storage.API().UploadFile(j.ctx)
 	if err != nil {
 		return
 	}
@@ -123,10 +123,10 @@ func (j *UploadJob) Execute() {
 	err = stream.Send(&spb.UploadFileRequest{
 		Data: &spb.UploadFileRequest_Metadata_{
 			Metadata: &spb.UploadFileRequest_Metadata{
-				DomainId:          int64(j.job.File.DomainId),
+				DomainId:          int64(j.job.File.DomainID),
 				Name:              j.job.File.Name,
 				MimeType:          j.job.File.MimeType,
-				Uuid:              j.job.File.Uuid,
+				Uuid:              j.job.File.UUID,
 				CreatedAt:         int64(j.job.File.CreatedAt),
 				StreamResponse:    false,
 				Channel:           spb.UploadFileChannel(j.job.File.Channel),

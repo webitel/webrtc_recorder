@@ -15,14 +15,14 @@ var sessionGroupRequest singleflight.Group
 const tokenRequestTimeout = time.Second * 15
 
 type Session struct {
-	Id         string        `json:"id"`
+	ID         string        `json:"id"`
 	Name       string        `json:"name"`
-	DomainId   int64         `json:"domain_id"`
+	DomainID   int64         `json:"domain_id"`
 	DomainName string        `json:"domain_name"`
 	Expire     int64         `json:"expire"`
-	UserId     int64         `json:"user_id"`
-	userIp     atomic.String `json:"user_ip"`
-	RoleIds    []int         `json:"role_ids"`
+	UserID     int64         `json:"user_id"`
+	userIP     atomic.String `json:"user_ip"`
+	RoleIDs    []int         `json:"role_ids"`
 
 	Token            string              `json:"token"`
 	Scopes           []SessionPermission `json:"scopes"`
@@ -47,7 +47,7 @@ func (self *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool 
 }
 
 func (self *Session) GetAclRoles() []int {
-	return self.RoleIds
+	return self.RoleIDs
 }
 
 func (self *Session) HasLicense(name string) bool {
@@ -61,19 +61,19 @@ func (self *Session) HasLicense(name string) bool {
 }
 
 func (self *Session) GetUserId() int64 {
-	return self.UserId
+	return self.UserID
 }
 
 func (self *Session) GetDomainId() int64 {
-	return self.DomainId
+	return self.DomainID
 }
 
 func (self *Session) SetIp(ip string) {
-	self.userIp.Store(ip)
+	self.userIP.Store(ip)
 }
 
 func (self *Session) GetUserIp() string {
-	return self.userIp.Load()
+	return self.userIP.Load()
 }
 
 func (self *Session) HasCallCenterLicense() bool {
@@ -100,7 +100,7 @@ func (self *Session) GetPermission(name string) SessionPermission {
 
 func NotAllowPermission(name string) SessionPermission {
 	return SessionPermission{
-		Id:     0,
+		ID:     0,
 		Name:   name,
 		Obac:   true,
 		rbac:   true,
@@ -118,16 +118,16 @@ func (self *Session) IsExpired() bool {
 }
 
 func (self *Session) Trace() map[string]any {
-	return map[string]any{"id": self.Id, "domain_id": self.DomainId}
+	return map[string]any{"id": self.ID, "domain_id": self.DomainID}
 }
 
 func (self *Session) IsValid() error {
-	if len(self.Id) < 1 {
-		return ErrValidId
+	if len(self.ID) < 1 {
+		return ErrValidID
 	}
 
-	if self.UserId < 1 {
-		return ErrValidUserId
+	if self.UserID < 1 {
+		return ErrValidUserID
 	}
 
 	if len(self.Token) < 1 {
@@ -138,8 +138,8 @@ func (self *Session) IsValid() error {
 	//	return model.NewBadRequestError("model.session.is_valid.domain_id.app_error", "").SetTranslationParams(self.Trace())
 	//}
 
-	if len(self.RoleIds) < 1 {
-		return ErrValidRoleIds
+	if len(self.RoleIDs) < 1 {
+		return ErrValidRoleIDs
 	}
 
 	return nil

@@ -92,7 +92,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			Category:    "server",
 			Usage:       "service id ",
 			Value:       "1",
-			Destination: &cfg.Service.Id,
+			Destination: &cfg.Service.ID,
 			Aliases:     []string{"i"},
 			EnvVars:     []string{"ID"},
 		},
@@ -120,7 +120,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			Usage:       "Postgres connection string",
 			EnvVars:     []string{"DATA_SOURCE"},
 			Value:       "postgres://postgres:postgres@localhost:5432/webitel?sslmode=disable",
-			Destination: &cfg.SqlSettings.DSN,
+			Destination: &cfg.SQLSettings.DSN,
 		},
 
 		&cli.StringSliceFlag{

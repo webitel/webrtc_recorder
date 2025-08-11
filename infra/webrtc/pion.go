@@ -40,7 +40,7 @@ type Settings struct {
 	EphemeralUDPPortRange *PortRange
 }
 
-func NewApi(log *wlog.Logger, cfg *Settings) API {
+func NewAPI(log *wlog.Logger, cfg *Settings) API {
 	var err error
 
 	mediaEngine := &webrtc.MediaEngine{}

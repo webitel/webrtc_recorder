@@ -15,7 +15,7 @@ import (
 )
 
 var wireAppResourceSet = wire.NewSet(
-	log, grpcSrv, setupCluster, setupSql, webrtcApi, authManager, storageClient,
+	log, grpcSrv, setupCluster, setupSQL, webrtcAPI, authManager, storageClient,
 )
 
 var wireAppHandlersSet = wire.NewSet(

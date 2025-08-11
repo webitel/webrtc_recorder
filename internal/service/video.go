@@ -35,7 +35,7 @@ type RtcUploadVideoSession struct {
 }
 
 func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file *model.File, w io.WriteCloser) *RtcUploadVideoSession {
-	id := model.NewId()
+	id := model.NewID()
 	session := &RtcUploadVideoSession{
 		id:     id,
 		file:   file,
@@ -227,6 +227,6 @@ func (s *RtcUploadVideoSession) AnswerSDP() string {
 	return ""
 }
 
-func (s *RtcUploadVideoSession) Id() string {
+func (s *RtcUploadVideoSession) ID() string {
 	return s.id
 }

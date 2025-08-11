@@ -45,6 +45,6 @@ func (s *Storage) Stop() {
 	_ = s.cli.Close()
 }
 
-func (s *Storage) Api() storage.FileServiceClient {
-	return s.cli.Api
+func (s *Storage) API() storage.FileServiceClient {
+	return s.cli.API
 }

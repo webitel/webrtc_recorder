@@ -1,6 +1,6 @@
 package model
 
 type RtcUploadVideoSession interface {
-	Id() string
+	ID() string
 	AnswerSDP() string
 }

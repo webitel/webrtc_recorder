@@ -57,7 +57,7 @@ func TestConsul_RegisterService(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, expectedServiceID, consul.serviceInstanceId)
+		assert.Equal(t, expectedServiceID, consul.serviceInstanceID)
 
 		// Cleanup
 		consul.Shutdown() // Зупиняємо горутину
@@ -135,9 +135,9 @@ func TestConsul_Shutdown(t *testing.T) {
 	// Arrange
 	mockAgent := new(mocks.Agent)
 	consul := newTestConsul(mockAgent, nil)
-	consul.serviceInstanceId = "test-service-test-instance-id"
+	consul.serviceInstanceID = "test-service-test-instance-id"
 
-	mockAgent.On("ServiceDeregister", consul.serviceInstanceId).Return(nil).Once()
+	mockAgent.On("ServiceDeregister", consul.serviceInstanceID).Return(nil).Once()
 
 	// Act
 	consul.Shutdown()
@@ -153,7 +153,7 @@ func TestConsul_handleTTLUpdateError(t *testing.T) {
 		consul := newTestConsul(mockAgent, nil)
 		config := Config{Name: "test-service"}
 		consul.config = &config
-		consul.serviceInstanceId = "test-service-test-instance-id"
+		consul.serviceInstanceID = "test-service-test-instance-id"
 
 		// Використовуємо 'Message' як було визначено в попередній ітерації
 		serverErr := api.StatusError{Code: http.StatusInternalServerError, Body: "server error"}
