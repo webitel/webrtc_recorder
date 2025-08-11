@@ -60,19 +60,19 @@ func (self *Session) HasLicense(name string) bool {
 	return false
 }
 
-func (self *Session) GetUserId() int64 {
+func (self *Session) GetUserID() int64 {
 	return self.UserID
 }
 
-func (self *Session) GetDomainId() int64 {
+func (self *Session) GetDomainID() int64 {
 	return self.DomainID
 }
 
-func (self *Session) SetIp(ip string) {
+func (self *Session) SetIP(ip string) {
 	self.userIP.Store(ip)
 }
 
-func (self *Session) GetUserIp() string {
+func (self *Session) GetUserIP() string {
 	return self.userIP.Load()
 }
 

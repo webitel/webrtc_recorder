@@ -65,7 +65,7 @@ func parseURL(u string) (target, error) {
 
 	err = decoder.Decode(&tgt, rawURL.Query())
 	if err != nil {
-		return target{}, fmt.Errorf("malformed URL parameters: %w")
+		return target{}, fmt.Errorf("malformed URL parameters: %w", err)
 	}
 
 	if len(tgt.Near) == 0 {
