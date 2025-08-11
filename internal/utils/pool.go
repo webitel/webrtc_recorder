@@ -25,17 +25,20 @@ func NewPool(ctx context.Context, workers, queueCount int) *Pool {
 		ctx:   ctx,
 	}
 	pool.Resize(workers)
+
 	return pool
 }
 
 func (p *Pool) worker() {
 	defer p.wg.Done()
+
 	for {
 		select {
 		case task, ok := <-p.tasks:
 			if !ok {
 				return
 			}
+
 			task.Execute()
 		case <-p.ctx.Done():
 			return
@@ -48,11 +51,14 @@ func (p *Pool) worker() {
 func (p *Pool) Resize(n int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
 	for p.size < n {
 		p.size++
 		p.wg.Add(1)
+
 		go p.worker()
 	}
+
 	for p.size > n {
 		p.size--
 		p.kill <- struct{}{}

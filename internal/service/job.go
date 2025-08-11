@@ -27,8 +27,8 @@ func (svc *jobHandler) errorJob(j *baseJob, maxRetry int, err error) {
 	if j.job.Retry >= maxRetry {
 		j.log.Error("max attempts reached")
 		svc.cleanup(j)
-		return
 
+		return
 	}
 
 	err = svc.jobStore.SetError(j.job.Id, err)
@@ -42,6 +42,7 @@ func (svc *jobHandler) cleanup(j *baseJob) {
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}
+
 	err = svc.jobStore.Delete(j.job.Id)
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))

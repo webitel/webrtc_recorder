@@ -49,17 +49,21 @@ type rrPickerBuilder struct{}
 
 func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 	logger.Infof("roundrobinPicker: Build called with info: %v", info)
+
 	if len(info.ReadySCs) == 0 {
 		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	}
+
 	scs := make([]balancer.SubConn, 0, len(info.ReadySCs))
 	subIdIndex := make(map[string]balancer.SubConn)
+
 	for sc, inf := range info.ReadySCs {
 		scs = append(scs, sc)
 		if inf.Address.ServerName != "" {
 			subIdIndex[inf.Address.ServerName] = sc
 		}
 	}
+
 	return &rrPicker{
 		subConns:   scs,
 		subIdIndex: subIdIndex,
@@ -92,6 +96,7 @@ func (p *rrPicker) Pick(r balancer.PickInfo) (balancer.PickResult, error) {
 		if sc, ok := p.subIdIndex[v.(StaticHost).Name]; ok {
 			return balancer.PickResult{SubConn: sc}, nil
 		}
+
 		return balancer.PickResult{}, errors.New("no such host")
 	}
 
@@ -99,5 +104,6 @@ func (p *rrPicker) Pick(r balancer.PickInfo) (balancer.PickResult, error) {
 	nextIndex := atomic.AddUint32(&p.next, 1)
 
 	sc := p.subConns[nextIndex%subConnsLen]
+
 	return balancer.PickResult{SubConn: sc}, nil
 }

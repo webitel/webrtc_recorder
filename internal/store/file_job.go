@@ -74,6 +74,7 @@ where instance = @instance;`, map[string]any{
 
 func (s *FileJobStore) Fetch(limit int, jobType string) ([]*model.Job, error) {
 	var jobs []*model.Job
+
 	err := s.db.Select(s.ctx, &jobs, `update webrtc_rec.file_jobs j
 set state = @state,
     activity_at = now(),

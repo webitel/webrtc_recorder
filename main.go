@@ -15,6 +15,7 @@ import (
 func main() {
 	if err := cmd.Run(); err != nil {
 		fmt.Println(err.Error())
+
 		return
 	}
 }

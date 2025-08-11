@@ -42,6 +42,7 @@ func grpcSrv(cfg *config.Config, l *wlog.Logger, am auth.Manager) (*grpc_srv.Ser
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return s, func() {
 		if err := s.Shutdown(); err != nil {
 			l.Error(err.Error(), wlog.Err(err))
@@ -68,6 +69,7 @@ func log(cfg *config.Config) (*wlog.Logger, func(), error) {
 		logConfig.FileJson = true
 		logConfig.FileLevel = logSettings.Lvl
 	}
+
 	l := wlog.NewLogger(logConfig)
 	wlog.RedirectStdLog(l)
 	wlog.InitGlobalLogger(l)
@@ -81,10 +83,12 @@ func log(cfg *config.Config) (*wlog.Logger, func(), error) {
 func setupCluster(cfg *config.Config, srv *grpc_srv.Server, l *wlog.Logger) (*consul.Cluster, func(), error) {
 	c := consul.NewCluster(model.ServiceName, cfg.Service.Consul, l)
 	host := srv.Host()
+
 	err := c.Start(cfg.Service.Id, host, srv.Port())
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return c, func() {
 		c.Stop()
 	}, nil
@@ -109,15 +113,16 @@ func webrtcApi(log *wlog.Logger, cfg *config.Config) (webrtc.API, func(), error)
 		return nil, nil, errors.New("webrtc codecs is empty")
 	}
 
-	var udpRange *webrtc.PortRange
-	var err error
+	var (
+		udpRange *webrtc.PortRange
+		err      error
+	)
 
 	if len(cfg.Rtc.EphemeralUDPPortRange) != 0 {
 		udpRange, err = portRangeFromString(cfg.Rtc.EphemeralUDPPortRange)
 		if err != nil {
 			return nil, nil, err
 		}
-
 	}
 
 	return webrtc.NewApi(log, &webrtc.Settings{
@@ -133,6 +138,7 @@ func webrtcApi(log *wlog.Logger, cfg *config.Config) (webrtc.API, func(), error)
 
 func authManager(cfg *config.Config, log *wlog.Logger) (auth.Manager, func(), error) {
 	manager := auth.NewAuthManager(1000, 60, cfg.Service.Consul, log)
+
 	err := manager.Start()
 	if err != nil {
 		return nil, nil, err
@@ -145,6 +151,7 @@ func authManager(cfg *config.Config, log *wlog.Logger) (auth.Manager, func(), er
 
 func storageClient(cfg *config.Config, log *wlog.Logger) (*storage.Storage, func(), error) {
 	fileStore := storage.New(cfg.Service.Consul, log)
+
 	err := fileStore.Start()
 	if err != nil {
 		return nil, nil, err
@@ -166,10 +173,12 @@ func portRangeFromString(str string) (*webrtc.PortRange, error) {
 	}
 
 	udpRange := &webrtc.PortRange{}
+
 	err := setPortRange(&udpRange.Min, l[0])
 	if err != nil {
 		return nil, err
 	}
+
 	err = setPortRange(&udpRange.Max, l[1])
 	if err != nil {
 		return nil, err
@@ -183,9 +192,12 @@ func setPortRange(dst *uint16, src string) error {
 	if err != nil {
 		return err
 	}
+
 	if !validUint16(p) {
 		return errors.New("invalid EphemeralUDPPortRange format")
 	}
+
 	*dst = uint16(p)
+
 	return nil
 }

@@ -21,5 +21,6 @@ type Job struct {
 
 func (j *JobConfig) Json() []byte {
 	js, _ := json.Marshal(j)
+
 	return js
 }

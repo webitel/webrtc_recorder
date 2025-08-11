@@ -66,7 +66,6 @@ func Run() error {
 			},
 		},
 	}
-
 	if err := def.Run(os.Args); err != nil {
 		return err
 	}

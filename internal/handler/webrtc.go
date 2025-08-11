@@ -40,8 +40,8 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 		return nil, err
 	}
 
-	i := make([]webrtci.ICEServer, 0, len(in.IceServers))
-	for _, server := range in.IceServers {
+	i := make([]webrtci.ICEServer, 0, len(in.GetIceServers()))
+	for _, server := range in.GetIceServers() {
 		i = append(i, webrtci.ICEServer{
 			URLs:           server.GetUrls(),
 			Username:       server.GetUsername(),
@@ -49,7 +49,8 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 			CredentialType: 0, // TODO
 		})
 	}
-	name := in.Name
+
+	name := in.GetName()
 	if name == "" {
 		name = model.NewId()
 	}
@@ -63,7 +64,7 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 		Channel:    int(spb.UploadFileChannel_ScreenSharingChannel),
 	}
 
-	sess, err := w.svc.UploadP2PVideo(in.SdpOffer, file, i)
+	sess, err := w.svc.UploadP2PVideo(in.GetSdpOffer(), file, i)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 }
 
 func (w *WebRTCRecorder) StopP2PVideo(ctx context.Context, in *webrtc_recorder.StopP2PVideoRequest) (*webrtc_recorder.StopP2PVideoResponse, error) {
-	e := w.svc.CloseP2P(in.Id)
+	e := w.svc.CloseP2P(in.GetId())
 	if e != nil {
 		return nil, e
 	}
@@ -84,7 +85,7 @@ func (w *WebRTCRecorder) StopP2PVideo(ctx context.Context, in *webrtc_recorder.S
 }
 
 func (w *WebRTCRecorder) RenegotiateP2PVideo(ctx context.Context, in *webrtc_recorder.RenegotiateP2PVideoRequest) (*webrtc_recorder.RenegotiateP2PVideoResponse, error) {
-	s, err := w.svc.RenegotiateP2P(in.Id, in.SdpOffer)
+	s, err := w.svc.RenegotiateP2P(in.GetId(), in.GetSdpOffer())
 	if err != nil {
 		return nil, err
 	}

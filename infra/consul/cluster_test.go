@@ -18,6 +18,7 @@ func TestCluster_Start(t *testing.T) {
 	// Зберігаємо і відновлюємо оригінальні значення
 	originalNewConsul := newConsul
 	originalReconnectDuration := reconnectDuration
+
 	t.Cleanup(func() {
 		newConsul = originalNewConsul
 		reconnectDuration = originalReconnectDuration

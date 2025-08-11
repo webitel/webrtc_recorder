@@ -59,10 +59,13 @@ func (svc *TempFileService) NewFilePath(file *model.File, ext string) error {
 	if file.Path != "" {
 		return errors.New("file path is no empty")
 	}
+
 	name := model.NewId()
 	if ext != "" {
 		name += "." + ext
 	}
-	file.Path = path.Join(svc.dir, fmt.Sprintf("%s", name))
+
+	file.Path = path.Join(svc.dir, name)
+
 	return nil
 }

@@ -24,8 +24,10 @@ type Client[T any] struct {
 var conns sync.Map
 
 func NewClient[T any](consulTarget, service string, api func(conn grpc.ClientConnInterface) T) (*Client[T], error) {
-	var conn *grpc.ClientConn
-	var err error
+	var (
+		conn *grpc.ClientConn
+		err  error
+	)
 
 	dsn := fmt.Sprintf("wbt://%s/%s?wait=15s", consulTarget, service)
 
@@ -39,6 +41,7 @@ func NewClient[T any](consulTarget, service string, api func(conn grpc.ClientCon
 		if err != nil {
 			return nil, err
 		}
+
 		conns.Store(dsn, conn)
 	}
 
@@ -62,6 +65,7 @@ func StaticHost(ctx context.Context, name string) context.Context {
 
 func WithToken(ctx context.Context, token string) context.Context {
 	header := metadata.New(map[string]string{TokenHeaderName: token})
+
 	return metadata.NewOutgoingContext(ctx, header)
 }
 

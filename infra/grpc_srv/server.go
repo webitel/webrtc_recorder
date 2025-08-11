@@ -52,6 +52,7 @@ func New(addr string, log *wlog.Logger, am auth.Manager) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	port, _ := strconv.Atoi(p)
 
 	if h == "::" {
@@ -75,7 +76,8 @@ func (s *Server) Listen() error {
 func (s *Server) Shutdown() error {
 	s.log.Debug("receive shutdown grpc")
 	err := s.listener.Close()
-	s.Server.GracefulStop()
+	s.GracefulStop()
+
 	return err
 }
 
@@ -83,6 +85,7 @@ func (s *Server) Host() string {
 	if e, ok := os.LookupEnv("PROXY_GRPC_HOST"); ok {
 		return e
 	}
+
 	return s.host
 }
 
@@ -95,6 +98,7 @@ func publicAddr() string {
 	if err != nil {
 		return ""
 	}
+
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
 		if err != nil {
@@ -118,6 +122,7 @@ func publicAddr() string {
 			// process IP address
 		}
 	}
+
 	return ""
 }
 
@@ -125,6 +130,7 @@ func isPublicIP(IP net.IP) bool {
 	if IP.IsLoopback() || IP.IsLinkLocalMulticast() || IP.IsLinkLocalUnicast() {
 		return false
 	}
+
 	return true
 }
 
@@ -158,11 +164,13 @@ func unaryInterceptor(am auth.Manager, log *wlog.Logger) grpc.UnaryServerInterce
 }
 
 func getSessionFromCtx(am auth.Manager, ctx context.Context) (metadata.MD, *auth.Session, error) {
-	var session *auth.Session
-	var err error
-	var token []string
-	var info metadata.MD
-	var ok bool
+	var (
+		session *auth.Session
+		err     error
+		token   []string
+		info    metadata.MD
+		ok      bool
+	)
 
 	v := ctx.Value(RequestContextName)
 	info, ok = v.(metadata.MD)
@@ -199,5 +207,6 @@ func SessionFromCtx(ctx context.Context) (*auth.Session, error) {
 	if sess == nil {
 		return nil, ErrUnauthenticated
 	}
+
 	return sess.(*auth.Session), nil
 }

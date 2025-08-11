@@ -60,6 +60,7 @@ func (c *Cluster) Start(serviceInstanceID, host string, port int) error {
 	}
 
 	c.log.Info(fmt.Sprintf("Service '%s' (ID: %s) successfully registered with Consul.", c.name, serviceInstanceID))
+
 	return nil
 }
 
@@ -68,7 +69,7 @@ func (c *Cluster) Stop() {
 }
 
 func (c *Cluster) attemptConsulRegistration(config Config) error {
-	for i := 0; i < defaultReconnectAttempts; i++ {
+	for i := range defaultReconnectAttempts {
 		err := c.discovery.RegisterService(config)
 		if err == nil {
 			return nil // Успішна реєстрація
@@ -79,5 +80,6 @@ func (c *Cluster) attemptConsulRegistration(config Config) error {
 
 		time.Sleep(reconnectDuration)
 	}
+
 	return fmt.Errorf("exceeded maximum reconnect attempts (%d) for Consul registration", defaultReconnectAttempts)
 }

@@ -17,5 +17,6 @@ type File struct {
 
 func (f *File) Json() []byte {
 	js, _ := json.Marshal(f)
+
 	return js
 }

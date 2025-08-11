@@ -54,6 +54,7 @@ func parseURL(u string) (target, error) {
 	}
 
 	var tgt target
+
 	tgt.User = rawURL.User.Username()
 	tgt.Password, _ = rawURL.User.Password()
 	tgt.Addr = rawURL.Host
@@ -67,12 +68,15 @@ func parseURL(u string) (target, error) {
 	if err != nil {
 		return target{}, errors.Wrap(err, "Malformed URL parameters")
 	}
+
 	if len(tgt.Near) == 0 {
 		tgt.Near = "_agent"
 	}
+
 	if tgt.MaxBackoff == 0 {
 		tgt.MaxBackoff = time.Second
 	}
+
 	return tgt, nil
 }
 
@@ -89,6 +93,7 @@ func (t *target) consulConfig() *api.Config {
 	c := &http.Client{
 		Timeout: t.Timeout,
 	}
+
 	return &api.Config{
 		Address:    t.Addr,
 		HttpAuth:   creds,

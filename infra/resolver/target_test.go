@@ -69,6 +69,7 @@ func TestParseURL(t *testing.T) {
 			tgt, err := parseURL(tc.url)
 			if tc.expectErr {
 				require.Error(t, err)
+
 				if tc.expectedErrMsg != "" {
 					assert.Contains(t, err.Error(), tc.expectedErrMsg)
 				}

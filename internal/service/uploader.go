@@ -19,6 +19,7 @@ const (
 
 type Uploader struct {
 	jobHandler
+
 	pool     *utils.Pool
 	storage  *storage.Storage
 	limit    int
@@ -51,6 +52,7 @@ func NewUploader(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs 
 
 func (svc *Uploader) listen() {
 	svc.log.Debug("listening for upload jobs")
+
 	ticker := time.NewTicker(time.Second)
 
 	defer func() {
@@ -68,8 +70,10 @@ func (svc *Uploader) listen() {
 			if err != nil {
 				svc.log.Error(err.Error(), wlog.Err(err))
 				time.Sleep(time.Second)
+
 				continue
 			}
+
 			for _, job := range jobs {
 				job.Retry++
 				svc.pool.Exec(&UploadJob{
@@ -87,9 +91,13 @@ func (svc *Uploader) listen() {
 }
 
 func (j *UploadJob) Execute() {
-	var err error
-	var src io.ReadCloser
+	var (
+		err error
+		src io.ReadCloser
+	)
+
 	now := time.Now()
+
 	j.log.Debug("execute")
 
 	defer func() {
@@ -100,6 +108,7 @@ func (j *UploadJob) Execute() {
 			j.svc.cleanup(j.baseJob)
 		}
 	}()
+
 	src, err = j.svc.tempFile.NewReader(*j.job.File)
 	if err != nil {
 		return
@@ -131,16 +140,20 @@ func (j *UploadJob) Execute() {
 	}
 
 	buf := make([]byte, 1024*256)
+
 	var n int
 	for {
 		n, err = src.Read(buf)
 		if err == io.EOF {
 			err = nil
 		}
+
 		if n == 0 {
 			stream.CloseSend()
+
 			break
 		}
+
 		err = stream.Send(&spb.UploadFileRequest{
 			Data: &spb.UploadFileRequest_Chunk{
 				Chunk: buf[:n],

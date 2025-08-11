@@ -37,6 +37,7 @@ func NewAuthManager(cacheSize int, cacheTime int64, consulAddr string, log *wlog
 		// 0 disabled cache
 		cacheTime = 1
 	}
+
 	return &authManager{
 		consulAddr: consulAddr,
 		session:    expirable.NewLRU[string, *Session](cacheSize, nil, time.Second*time.Duration(cacheTime)),
@@ -46,6 +47,7 @@ func NewAuthManager(cacheSize int, cacheTime int64, consulAddr string, log *wlog
 
 func (am *authManager) Start() error {
 	am.log.Debug("starting")
+
 	var err error
 
 	am.startOnce.Do(func() {
@@ -59,6 +61,7 @@ func (am *authManager) Start() error {
 			return
 		}
 	})
+
 	return err
 }
 

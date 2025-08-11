@@ -42,6 +42,7 @@ type Settings struct {
 
 func NewApi(log *wlog.Logger, cfg *Settings) API {
 	var err error
+
 	mediaEngine := &webrtc.MediaEngine{}
 
 	s := webrtc.SettingEngine{}
@@ -62,6 +63,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 		if err != nil {
 			panic(err.Error())
 		}
+
 		log.Debug(fmt.Sprintf("set udp port range: %v/%v", cfg.EphemeralUDPPortRange.Min, cfg.EphemeralUDPPortRange.Max))
 	}
 
@@ -89,6 +91,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 		}, typeCodec); err != nil {
 			panic(err)
 		}
+
 		log.Debug(fmt.Sprintf("register codec: %s (PayloadType=%d)", v, payloadType))
 		payloadType--
 	}
@@ -103,6 +106,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 	if err != nil {
 		panic(err)
 	}
+
 	registry.Add(intervalPliFactory)
 
 	// Use the default set of Interceptors

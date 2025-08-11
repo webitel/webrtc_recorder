@@ -18,6 +18,7 @@ func TestWatchConsulService(t *testing.T) {
 		// --- Arrange ---
 		mockServicer := new(mocks.Servicer)
 		out := make(chan []serviceMeta, 1)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 
@@ -86,6 +87,7 @@ func TestWatchConsulService(t *testing.T) {
 		case <-time.After(40 * time.Millisecond):
 			// Все добре, нічого не прийшло
 		}
+
 		mockServicer.AssertExpectations(t)
 	})
 }

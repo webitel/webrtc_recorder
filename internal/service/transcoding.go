@@ -23,6 +23,7 @@ type FileJobStore interface {
 
 type Transcoding struct {
 	jobHandler
+
 	limit    int
 	maxRetry int
 	pool     *utils.Pool
@@ -59,7 +60,6 @@ func (svc *Transcoding) CreateJob(f *model.File) error {
 
 func (svc *Transcoding) successJob(j *transcodingJob, trFile *model.File) {
 	var err error
-
 	if err = svc.tempFile.DeleteFile(j.job.File); err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}
@@ -69,6 +69,7 @@ func (svc *Transcoding) successJob(j *transcodingJob, trFile *model.File) {
 
 	uploadJob.Type = UploadJobName
 	uploadJob.Retry = 0
+
 	err = svc.jobStore.Update(model.JobIdle, &uploadJob)
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
@@ -95,8 +96,10 @@ func (svc *Transcoding) listen() {
 			if err != nil {
 				svc.log.Error(err.Error(), wlog.Err(err))
 				time.Sleep(time.Second)
+
 				continue
 			}
+
 			for _, job := range jobs {
 				job.Retry++
 				svc.pool.Exec(&transcodingJob{
@@ -115,7 +118,9 @@ func (svc *Transcoding) listen() {
 
 func (j *transcodingJob) Execute() {
 	j.log.Debug("execute")
+
 	var err error
+
 	mp4File := *j.job.File
 	mp4File.Path = ""
 	mp4File.MimeType = "video/mp4" // TODO

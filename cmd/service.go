@@ -46,6 +46,7 @@ func (a *App) Run() (func(), error) {
 
 	a.eg.Go(func() error {
 		a.log.Info(fmt.Sprintf("listen grpc %s:%d", r.grpcSrv.Host(), r.grpcSrv.Port()))
+
 		return r.grpcSrv.Listen()
 	})
 
@@ -73,10 +74,12 @@ func apiCmd(cfg *config.Config) *cli.Command {
 			}()
 			if err != nil {
 				wlog.Error(err.Error(), wlog.Err(err))
+
 				return err
 			}
 			signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			<-interruptChan
+
 			return nil
 		},
 	}
@@ -128,7 +131,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			EnvVars:     []string{"WEBRTC_CODECS"},
 			Destination: &cfg.Rtc.Codecs,
 		},
-		//&cli.StringSliceFlag{
+		// &cli.StringSliceFlag{
 		//	Name:        "webrtc-network",
 		//	Category:    "webrtc",
 		//	Usage:       "webrtc support network (tcp, tcp)",

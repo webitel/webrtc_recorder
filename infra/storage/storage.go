@@ -27,6 +27,7 @@ func New(consulAddr string, log *wlog.Logger) *Storage {
 
 func (s *Storage) Start() error {
 	s.log.Debug("starting")
+
 	var err error
 
 	s.startOnce.Do(func() {
@@ -35,6 +36,7 @@ func (s *Storage) Start() error {
 			return
 		}
 	})
+
 	return err
 }
 

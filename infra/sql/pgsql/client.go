@@ -76,6 +76,7 @@ func (db *DB) Begin(ctx context.Context) (pgx.Tx, error) {
 
 func (db *DB) Close() error {
 	db.pool.Close()
+
 	return nil
 }
 

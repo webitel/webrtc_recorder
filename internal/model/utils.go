@@ -11,6 +11,7 @@ func NewId() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return id.String()
 }
 

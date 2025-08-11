@@ -25,12 +25,14 @@ var consulClients sync.Map
 
 func (b *builder) Build(url resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	dsn := strings.Join([]string{schemeName + ":/", url.URL.Host + url.URL.Path + "?" + url.URL.RawQuery}, "/")
+
 	tgt, err := parseURL(dsn)
 	if err != nil {
 		return nil, errors.Wrap(err, "Wrong consul URL")
 	}
 
 	cfg := tgt.consulConfig()
+
 	var cli *api.Client
 
 	if c, ok := consulClients.Load(cfg.Address); ok {
@@ -45,6 +47,7 @@ func (b *builder) Build(url resolver.Target, cc resolver.ClientConn, opts resolv
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	pipe := make(chan []serviceMeta)
 	go watchConsulService(ctx, cli.Health(), tgt, pipe)
 	go populateEndpoints(ctx, cc, pipe)

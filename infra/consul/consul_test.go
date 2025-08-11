@@ -22,6 +22,7 @@ func newTestConsul(agent Agent, checkFn CheckFunction) *Consul {
 	if checkFn == nil {
 		checkFn = func() error { return nil } // Здоровий за замовчуванням
 	}
+
 	return &Consul{
 		id:      "test-instance-id",
 		log:     wlog.NewLogger(&wlog.LoggerConfiguration{EnableConsole: false}),

@@ -13,6 +13,7 @@ import (
 // mockSubConn - це проста реалізація balancer.SubConn для тестів
 type mockSubConn struct {
 	balancer.SubConn
+
 	id string
 }
 
@@ -36,11 +37,14 @@ func TestRrPicker_Pick(t *testing.T) {
 		// Виклики мають іти по колу. Оскільки початковий індекс випадковий,
 		// ми просто перевіряємо, що за N викликів кожен сервер буде обрано.
 		counts := make(map[string]int)
-		for i := 0; i < 30; i++ {
+
+		for range 30 {
 			res, err := picker.Pick(balancer.PickInfo{Ctx: context.Background()})
 			assert.NoError(t, err)
+
 			counts[res.SubConn.(*mockSubConn).id]++
 		}
+
 		assert.Equal(t, 10, counts["sc1"])
 		assert.Equal(t, 10, counts["sc2"])
 		assert.Equal(t, 10, counts["sc3"])
@@ -52,7 +56,7 @@ func TestRrPicker_Pick(t *testing.T) {
 
 		// --- Act & Assert ---
 		// Всі виклики мають іти до sc2
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			res, err := picker.Pick(balancer.PickInfo{Ctx: ctx})
 			assert.NoError(t, err)
 			assert.Same(t, sc2, res.SubConn)

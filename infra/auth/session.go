@@ -94,6 +94,7 @@ func (self *Session) GetPermission(name string) SessionPermission {
 			return v
 		}
 	}
+
 	return NotAllowPermission(name)
 }
 
@@ -124,14 +125,16 @@ func (self *Session) IsValid() error {
 	if len(self.Id) < 1 {
 		return ErrValidId
 	}
+
 	if self.UserId < 1 {
 		return ErrValidUserId
 	}
+
 	if len(self.Token) < 1 {
 		return ErrValidToken
 	}
 
-	//if self.DomainId < 1 {
+	// if self.DomainId < 1 {
 	//	return model.NewBadRequestError("model.session.is_valid.domain_id.app_error", "").SetTranslationParams(self.Trace())
 	//}
 
@@ -163,7 +166,6 @@ func (am *authManager) getSession(c context.Context, token string) (Session, err
 
 		return am.GetSession(ctx, token)
 	})
-
 	if err != nil {
 		return Session{}, err
 	}
