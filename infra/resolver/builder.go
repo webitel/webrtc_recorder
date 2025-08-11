@@ -2,11 +2,11 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/resolver"
 
 	"github.com/webitel/wlog"
@@ -28,7 +28,7 @@ func (b *builder) Build(url resolver.Target, cc resolver.ClientConn, opts resolv
 
 	tgt, err := parseURL(dsn)
 	if err != nil {
-		return nil, errors.Wrap(err, "Wrong consul URL")
+		return nil, fmt.Errorf("wrong consul URL: %w", err)
 	}
 
 	cfg := tgt.consulConfig()
@@ -43,7 +43,7 @@ func (b *builder) Build(url resolver.Target, cc resolver.ClientConn, opts resolv
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Couldn't connect to the Consul API")
+		return nil, fmt.Errorf("couldn't connect to the Consul API: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

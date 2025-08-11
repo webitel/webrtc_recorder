@@ -1,8 +1,9 @@
 package store
 
 import (
+	"errors"
+
 	"github.com/hashicorp/golang-lru/v2/simplelru"
-	"github.com/pkg/errors"
 
 	"github.com/webitel/wlog"
 

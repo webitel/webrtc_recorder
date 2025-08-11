@@ -27,8 +27,9 @@ type Uploader struct {
 }
 
 type UploadJob struct {
-	svc *Uploader
 	*baseJob
+
+	svc *Uploader
 }
 
 func NewUploader(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, tmp *TempFileService, st *storage.Storage) *Uploader {

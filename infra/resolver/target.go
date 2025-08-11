@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-playground/form"
 	"github.com/hashicorp/consul/api"
-	"github.com/pkg/errors"
 )
 
 type target struct {
@@ -44,13 +43,13 @@ func (t *target) String() string {
 func parseURL(u string) (target, error) {
 	rawURL, err := url.Parse(u)
 	if err != nil {
-		return target{}, errors.Wrap(err, "Malformed URL")
+		return target{}, fmt.Errorf("malformed URL: %w", err)
 	}
 
 	if rawURL.Scheme != schemeName ||
 		len(rawURL.Host) == 0 || len(strings.TrimLeft(rawURL.Path, "/")) == 0 {
 		return target{},
-			errors.Errorf("Malformed URL('%s'). Must be in the next format: 'consul://[user:passwd]@host/service?param=value'", u)
+			fmt.Errorf("malformed URL('%s'); must be in the next format: 'consul://[user:passwd]@host/service?param=value'", u)
 	}
 
 	var tgt target
@@ -66,7 +65,7 @@ func parseURL(u string) (target, error) {
 
 	err = decoder.Decode(&tgt, rawURL.Query())
 	if err != nil {
-		return target{}, errors.Wrap(err, "Malformed URL parameters")
+		return target{}, fmt.Errorf("malformed URL parameters: %w")
 	}
 
 	if len(tgt.Near) == 0 {
