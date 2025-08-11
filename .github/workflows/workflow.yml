@@ -45,6 +45,10 @@ jobs:
         src=.env.example dst=/etc/default/${{ vars.SERVICE_NAME }}.env type=config
 
       package-depends: ffmpeg
+      scripts: |
+        preinstall: deploy/debian/preinst.sh
+        postinstall: deploy/debian/postinst.sh
+        preremove: deploy/debian/prerm.sh
 
   deploy:
     name: Deploy
