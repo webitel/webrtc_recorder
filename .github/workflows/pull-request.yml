@@ -1,4 +1,4 @@
-name: PR (${{ vars.SERVICE_NAME }})
+name: PR (webitel-webrtc-rec)
 
 on:
   pull_request:

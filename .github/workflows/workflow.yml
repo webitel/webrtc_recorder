@@ -1,6 +1,6 @@
-name: Workflow (${{ vars.SERVICE_NAME }})
+name: Workflow (webitel-webrtc-rec)
 run-name: >
-  ${{ vars.SERVICE_NAME }}@${{ github.ref_name }}#${{ github.run_number }} - ${{ github.event.head_commit.message || github.event.pull_request.title || 'Manual trigger' }}
+  webitel-webrtc-rec@${{ github.ref_name }}#${{ github.run_number }} - ${{ github.event.head_commit.message || github.event.pull_request.title || 'Manual trigger' }}
 
 on:
   push:
