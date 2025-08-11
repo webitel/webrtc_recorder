@@ -1,5 +1,45 @@
-.idea
-/bin/
-.vscode/
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin
+
+# Test binary, built with `go test -fc`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.txt
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Editor junk
+*.sublime-workspace
+*.swp
+.idea/*
+!.idea/golinter.xml
+!.idea/watcherTasks.xml
+!.idea/inspectionProfiles/
+!.idea/codeStyles/
+.fleet/
+*.iml
+*.tmp
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+.vs/
+.eslintcache
+.stylelintcache
+
+# Ignore OSX indexing
+.DS_Store
+
+*.env
 env
 debug
