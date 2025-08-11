@@ -32,12 +32,12 @@ type Session struct {
 	validLicense     []string
 }
 
-func (self *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool {
+func (s *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool {
 	if !perm.rbac {
 		return false
 	}
 
-	for _, v := range self.adminPermissions {
+	for _, v := range s.adminPermissions {
 		if v == acc {
 			return false
 		}
@@ -46,12 +46,12 @@ func (self *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool 
 	return perm.rbac
 }
 
-func (self *Session) GetAclRoles() []int {
-	return self.RoleIDs
+func (s *Session) GetAclRoles() []int {
+	return s.RoleIDs
 }
 
-func (self *Session) HasLicense(name string) bool {
-	for _, v := range self.validLicense {
+func (s *Session) HasLicense(name string) bool {
+	for _, v := range s.validLicense {
 		if v == name {
 			return true
 		}
@@ -60,36 +60,36 @@ func (self *Session) HasLicense(name string) bool {
 	return false
 }
 
-func (self *Session) GetUserID() int64 {
-	return self.UserID
+func (s *Session) GetUserID() int64 {
+	return s.UserID
 }
 
-func (self *Session) GetDomainID() int64 {
-	return self.DomainID
+func (s *Session) GetDomainID() int64 {
+	return s.DomainID
 }
 
-func (self *Session) SetIP(ip string) {
-	self.userIP.Store(ip)
+func (s *Session) SetIP(ip string) {
+	s.userIP.Store(ip)
 }
 
-func (self *Session) GetUserIP() string {
-	return self.userIP.Load()
+func (s *Session) GetUserIP() string {
+	return s.userIP.Load()
 }
 
-func (self *Session) HasCallCenterLicense() bool {
-	return self.HasLicense(LicenseCallCenter)
+func (s *Session) HasCallCenterLicense() bool {
+	return s.HasLicense(LicenseCallCenter)
 }
 
-func (self *Session) HasChatLicense() bool {
-	return self.HasLicense(LicenseChat)
+func (s *Session) HasChatLicense() bool {
+	return s.HasLicense(LicenseChat)
 }
 
-func (self *Session) CountLicenses() int {
-	return len(self.active)
+func (s *Session) CountLicenses() int {
+	return len(s.active)
 }
 
-func (self *Session) GetPermission(name string) SessionPermission {
-	for _, v := range self.Scopes {
+func (s *Session) GetPermission(name string) SessionPermission {
+	for _, v := range s.Scopes {
 		if v.Name == name {
 			return v
 		}
@@ -113,40 +113,40 @@ func GetMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func (self *Session) IsExpired() bool {
-	return self.Expire*1000 < GetMillis()
+func (s *Session) IsExpired() bool {
+	return s.Expire*1000 < GetMillis()
 }
 
-func (self *Session) Trace() map[string]any {
-	return map[string]any{"id": self.ID, "domain_id": self.DomainID}
+func (s *Session) Trace() map[string]any {
+	return map[string]any{"id": s.ID, "domain_id": s.DomainID}
 }
 
-func (self *Session) IsValid() error {
-	if len(self.ID) < 1 {
+func (s *Session) IsValid() error {
+	if len(s.ID) < 1 {
 		return ErrValidID
 	}
 
-	if self.UserID < 1 {
+	if s.UserID < 1 {
 		return ErrValidUserID
 	}
 
-	if len(self.Token) < 1 {
+	if len(s.Token) < 1 {
 		return ErrValidToken
 	}
 
 	// if self.DomainId < 1 {
 	//	return model.NewBadRequestError("model.session.is_valid.domain_id.app_error", "").SetTranslationParams(self.Trace())
-	//}
+	// }
 
-	if len(self.RoleIDs) < 1 {
+	if len(s.RoleIDs) < 1 {
 		return ErrValidRoleIDs
 	}
 
 	return nil
 }
 
-func (self *Session) HasAction(name string) bool {
-	for _, v := range self.actions {
+func (s *Session) HasAction(name string) bool {
+	for _, v := range s.actions {
 		if v == name {
 			return true
 		}

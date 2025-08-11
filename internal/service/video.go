@@ -150,7 +150,7 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrtc.ICEConnectionState) {
 	s.log.Debug(fmt.Sprintf("connection state has changed to %s", connectionState.String()))
 
-	switch connectionState {
+	switch connectionState { //nolint:exhaustive
 	case webrtc.ICEConnectionStateFailed:
 		s.close()
 	default:
