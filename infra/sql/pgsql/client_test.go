@@ -13,13 +13,13 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/webitel/webrtc_recorder/infra/sql"
+
 	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/infra/sql"
 )
 
-var (
-	testStore sql.Store
-)
+var testStore sql.Store
 
 // testUser - це структура для тестування.
 type testUser struct {

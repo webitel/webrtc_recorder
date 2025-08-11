@@ -2,15 +2,15 @@ package auth
 
 import (
 	"context"
-	"github.com/webitel/wlog"
+	"time"
+
 	"go.uber.org/atomic"
 	"golang.org/x/sync/singleflight"
-	"time"
+
+	"github.com/webitel/wlog"
 )
 
-var (
-	sessionGroupRequest singleflight.Group
-)
+var sessionGroupRequest singleflight.Group
 
 const tokenRequestTimeout = time.Second * 15
 
@@ -116,12 +116,11 @@ func (self *Session) IsExpired() bool {
 	return self.Expire*1000 < GetMillis()
 }
 
-func (self *Session) Trace() map[string]interface{} {
-	return map[string]interface{}{"id": self.Id, "domain_id": self.DomainId}
+func (self *Session) Trace() map[string]any {
+	return map[string]any{"id": self.Id, "domain_id": self.DomainId}
 }
 
 func (self *Session) IsValid() error {
-
 	if len(self.Id) < 1 {
 		return ErrValidId
 	}
@@ -154,12 +153,11 @@ func (self *Session) HasAction(name string) bool {
 }
 
 func (am *authManager) getSession(c context.Context, token string) (Session, error) {
-
 	if v, ok := am.session.Get(token); ok {
 		return *v, nil
 	}
 
-	result, err, shared := sessionGroupRequest.Do(token, func() (interface{}, error) {
+	result, err, shared := sessionGroupRequest.Do(token, func() (any, error) {
 		ctx, cancel := context.WithTimeout(c, tokenRequestTimeout)
 		defer cancel()
 

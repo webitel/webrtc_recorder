@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/webitel/webrtc_recorder/infra/resolver/mocks" // Імпортуємо згенеровані моки
 )
 

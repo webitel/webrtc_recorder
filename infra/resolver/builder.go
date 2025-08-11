@@ -2,13 +2,14 @@ package resolver
 
 import (
 	"context"
-	"github.com/webitel/wlog"
 	"strings"
 	"sync"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/resolver"
+
+	"github.com/webitel/wlog"
 )
 
 // schemeName for the urls

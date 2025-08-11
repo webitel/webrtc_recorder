@@ -3,7 +3,7 @@ package auth
 type SessionPermission struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
-	//Abac   bool   `json:"abac"`
+	// Abac   bool   `json:"abac"`
 	Obac   bool   `json:"obac"`
 	rbac   bool   `json:"rbac"`
 	Access uint32 `json:"access"`

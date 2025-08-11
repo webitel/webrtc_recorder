@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/urfave/cli/v2"
 	"time"
+
+	"github.com/urfave/cli/v2"
 )
 
 type Config struct {
@@ -39,7 +40,7 @@ type Service struct {
 
 type RtcSettings struct {
 	Codecs cli.StringSlice
-	//Network cli.StringSlice
+	// Network cli.StringSlice
 	Ice struct {
 		DisconnectedTimeout time.Duration
 		FailedTimeout       time.Duration

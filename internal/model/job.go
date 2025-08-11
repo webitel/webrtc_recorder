@@ -9,8 +9,7 @@ const (
 	JobActive
 )
 
-type JobConfig struct {
-}
+type JobConfig struct{}
 
 type Job struct {
 	Id     int        `json:"id" db:"id"`

@@ -3,13 +3,14 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"github.com/webitel/wlog"
 	"sort"
 	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/jpillora/backoff"
 	"google.golang.org/grpc/resolver"
+
+	"github.com/webitel/wlog"
 )
 
 // init function needs for  auto-register in resolvers registry

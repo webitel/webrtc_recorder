@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"github.com/urfave/cli/v2"
-	"github.com/webitel/webrtc_recorder/config"
 	"os"
 	"time"
+
+	"github.com/urfave/cli/v2"
+
+	"github.com/webitel/webrtc_recorder/config"
 )
 
 func Run() error {

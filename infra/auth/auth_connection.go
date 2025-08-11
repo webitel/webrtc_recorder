@@ -3,13 +3,14 @@ package auth
 import (
 	"context"
 	"errors"
-	"github.com/webitel/webrtc_recorder/infra/grpc_client"
 	"strings"
 	"time"
 
-	"github.com/webitel/webrtc_recorder/gen/api"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/webitel/webrtc_recorder/gen/api"
+	"github.com/webitel/webrtc_recorder/infra/grpc_client"
 )
 
 const (
@@ -20,10 +21,9 @@ const (
 	LicenseWFM         = "WFM"
 )
 
-func (am *authManager) ProductLimit(ctx context.Context, token string, productName string) (int, error) {
+func (am *authManager) ProductLimit(ctx context.Context, token, productName string) (int, error) {
 	outCtx := grpc_client.WithToken(ctx, token)
 	tenant, err := am.customer.Api.GetCustomer(outCtx, &api.GetCustomerRequest{})
-
 	if err != nil {
 		return 0, err
 	}
@@ -62,7 +62,6 @@ func (am *authManager) GetSession(c context.Context, token string) (*Session, er
 	ctx := grpc_client.WithToken(c, token)
 
 	resp, err := am.auth.Api.UserInfo(ctx, &api.UserinfoRequest{})
-
 	if err != nil {
 		if status.Code(err) == codes.Unauthenticated {
 			return nil, ErrStatusUnauthenticated

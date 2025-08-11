@@ -2,18 +2,20 @@ package handler
 
 import (
 	"context"
+
+	"github.com/webitel/wlog"
+
 	spb "github.com/webitel/webrtc_recorder/gen/storage"
 	"github.com/webitel/webrtc_recorder/gen/webrtc_recorder"
 	"github.com/webitel/webrtc_recorder/infra/grpc_srv"
 	webrtci "github.com/webitel/webrtc_recorder/infra/webrtc"
 	"github.com/webitel/webrtc_recorder/internal/model"
-	"github.com/webitel/wlog"
 )
 
 type WebRTCRecorderService interface {
 	UploadP2PVideo(sdpOffer string, file model.File, ice []webrtci.ICEServer) (model.RtcUploadVideoSession, error)
 	CloseP2P(id string) error
-	RenegotiateP2P(id string, sdpOffer string) (model.RtcUploadVideoSession, error)
+	RenegotiateP2P(id, sdpOffer string) (model.RtcUploadVideoSession, error)
 }
 
 type WebRTCRecorder struct {
@@ -23,7 +25,6 @@ type WebRTCRecorder struct {
 }
 
 func NewWebRTCRecorder(svc WebRTCRecorderService, s *grpc_srv.Server, l *wlog.Logger) *WebRTCRecorder {
-
 	h := &WebRTCRecorder{
 		svc: svc,
 		log: l,
@@ -34,7 +35,6 @@ func NewWebRTCRecorder(svc WebRTCRecorderService, s *grpc_srv.Server, l *wlog.Lo
 }
 
 func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder.UploadP2PVideoRequest) (*webrtc_recorder.UploadP2PVideoResponse, error) {
-
 	authUser, err := grpc_srv.SessionFromCtx(ctx)
 	if err != nil {
 		return nil, err

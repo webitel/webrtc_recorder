@@ -3,6 +3,12 @@ package cmd
 import (
 	"context"
 	"errors"
+	"math"
+	"strconv"
+	"strings"
+
+	"github.com/webitel/wlog"
+
 	"github.com/webitel/webrtc_recorder/config"
 	"github.com/webitel/webrtc_recorder/infra/auth"
 	"github.com/webitel/webrtc_recorder/infra/consul"
@@ -14,10 +20,6 @@ import (
 	"github.com/webitel/webrtc_recorder/infra/webrtc"
 	"github.com/webitel/webrtc_recorder/internal/handler"
 	"github.com/webitel/webrtc_recorder/internal/model"
-	"github.com/webitel/wlog"
-	"math"
-	"strconv"
-	"strings"
 )
 
 type handlers struct {
@@ -71,7 +73,6 @@ func log(cfg *config.Config) (*wlog.Logger, func(), error) {
 	wlog.InitGlobalLogger(l)
 
 	exit := func() {
-
 	}
 
 	return l, exit, nil
@@ -81,14 +82,12 @@ func setupCluster(cfg *config.Config, srv *grpc_srv.Server, l *wlog.Logger) (*co
 	c := consul.NewCluster(model.ServiceName, cfg.Service.Consul, l)
 	host := srv.Host()
 	err := c.Start(cfg.Service.Id, host, srv.Port())
-
 	if err != nil {
 		return nil, nil, err
 	}
 	return c, func() {
 		c.Stop()
 	}, nil
-
 }
 
 func setupSql(ctx context.Context, log *wlog.Logger, cfg *config.Config) (sql.Store, func(), error) {
@@ -106,7 +105,6 @@ func setupSql(ctx context.Context, log *wlog.Logger, cfg *config.Config) (sql.St
 }
 
 func webrtcApi(log *wlog.Logger, cfg *config.Config) (webrtc.API, func(), error) {
-
 	if len(cfg.Rtc.Codecs.Value()) == 0 {
 		return nil, nil, errors.New("webrtc codecs is empty")
 	}

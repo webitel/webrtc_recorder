@@ -2,11 +2,14 @@ package service
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/pion/webrtc/v4"
+
+	"github.com/webitel/wlog"
+
 	webrtci "github.com/webitel/webrtc_recorder/infra/webrtc"
 	"github.com/webitel/webrtc_recorder/internal/model"
-	"github.com/webitel/wlog"
-	"io"
 )
 
 type SessionStore interface {
@@ -73,7 +76,7 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 	return session, nil
 }
 
-func (svc *WebRtcRecorder) RenegotiateP2P(id string, sdpOffer string) (model.RtcUploadVideoSession, error) {
+func (svc *WebRtcRecorder) RenegotiateP2P(id, sdpOffer string) (model.RtcUploadVideoSession, error) {
 	session, err := svc.sessions.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("p2p session with id %s not found", id)

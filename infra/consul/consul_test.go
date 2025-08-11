@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/webitel/webrtc_recorder/infra/consul/mocks"
+
 	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/infra/consul/mocks"
 )
 
 // newTestConsul - хелпер для створення екземпляра Consul з моком для тестів.

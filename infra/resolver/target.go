@@ -59,7 +59,7 @@ func parseURL(u string) (target, error) {
 	tgt.Addr = rawURL.Host
 	tgt.Service = strings.TrimLeft(rawURL.Path, "/")
 	decoder := form.NewDecoder()
-	decoder.RegisterCustomTypeFunc(func(vals []string) (interface{}, error) {
+	decoder.RegisterCustomTypeFunc(func(vals []string) (any, error) {
 		return time.ParseDuration(vals[0])
 	}, time.Duration(0))
 

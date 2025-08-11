@@ -1,10 +1,12 @@
 package storage
 
 import (
+	"sync"
+
+	"github.com/webitel/wlog"
+
 	"github.com/webitel/webrtc_recorder/gen/storage"
 	"github.com/webitel/webrtc_recorder/infra/grpc_client"
-	"github.com/webitel/wlog"
-	"sync"
 )
 
 type Storage struct {
@@ -14,9 +16,7 @@ type Storage struct {
 	log        *wlog.Logger
 }
 
-var (
-	storageServiceName = "storage"
-)
+var storageServiceName = "storage"
 
 func New(consulAddr string, log *wlog.Logger) *Storage {
 	return &Storage{
@@ -34,7 +34,6 @@ func (s *Storage) Start() error {
 		if err != nil {
 			return
 		}
-
 	})
 	return err
 }

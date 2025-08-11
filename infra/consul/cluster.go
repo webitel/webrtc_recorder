@@ -2,8 +2,9 @@ package consul
 
 import (
 	"fmt"
-	"github.com/webitel/wlog"
 	"time"
+
+	"github.com/webitel/wlog"
 )
 
 var (
@@ -22,7 +23,7 @@ type Cluster struct {
 	log        *wlog.Logger
 }
 
-func NewCluster(name string, consulAddr string, log *wlog.Logger) *Cluster {
+func NewCluster(name, consulAddr string, log *wlog.Logger) *Cluster {
 	return &Cluster{
 		name:       name,
 		consulAddr: consulAddr,
@@ -30,7 +31,7 @@ func NewCluster(name string, consulAddr string, log *wlog.Logger) *Cluster {
 	}
 }
 
-func (c *Cluster) Start(serviceInstanceID string, host string, port int) error {
+func (c *Cluster) Start(serviceInstanceID, host string, port int) error {
 	consulClient, err := newConsul(
 		serviceInstanceID,
 		c.consulAddr,

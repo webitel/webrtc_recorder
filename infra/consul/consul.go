@@ -3,10 +3,12 @@ package consul
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/consul/api"
-	"github.com/webitel/wlog"
 	"net/http"
 	"time"
+
+	"github.com/hashicorp/consul/api"
+
+	"github.com/webitel/wlog"
 )
 
 type CheckFunction func() error
@@ -38,7 +40,7 @@ type Config struct {
 // check: функція, яка повертає nil, якщо сервіс здоровий, або error, якщо ні.
 // log: logger
 // consulAgentAddr: адреса Consul агента.
-func NewConsul(id string, consulAgentAddr string, log *wlog.Logger, check CheckFunction) (*Consul, error) {
+func NewConsul(id, consulAgentAddr string, log *wlog.Logger, check CheckFunction) (*Consul, error) {
 	if check == nil {
 		return nil, errors.New("check function cannot be nil")
 	}

@@ -2,13 +2,15 @@ package service
 
 import (
 	"context"
+	"io"
+	"time"
+
+	"github.com/webitel/wlog"
+
 	"github.com/webitel/webrtc_recorder/config"
 	spb "github.com/webitel/webrtc_recorder/gen/storage"
 	"github.com/webitel/webrtc_recorder/infra/storage"
 	"github.com/webitel/webrtc_recorder/internal/utils"
-	"github.com/webitel/wlog"
-	"io"
-	"time"
 )
 
 const (
@@ -91,7 +93,6 @@ func (j *UploadJob) Execute() {
 	j.log.Debug("execute")
 
 	defer func() {
-
 		if err != nil {
 			j.svc.errorJob(j.baseJob, j.svc.maxRetry, err)
 		} else {
@@ -125,7 +126,6 @@ func (j *UploadJob) Execute() {
 			},
 		},
 	})
-
 	if err != nil {
 		return
 	}

@@ -18,7 +18,7 @@ type Pool struct {
 	ctx   context.Context
 }
 
-func NewPool(ctx context.Context, workers int, queueCount int) *Pool {
+func NewPool(ctx context.Context, workers, queueCount int) *Pool {
 	pool := &Pool{
 		tasks: make(chan Task, queueCount),
 		kill:  make(chan struct{}),

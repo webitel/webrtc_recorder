@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
@@ -10,9 +12,10 @@ import (
 	"github.com/pion/webrtc/v4/pkg/media/h264writer"
 	"github.com/pion/webrtc/v4/pkg/media/ivfwriter"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
-	"github.com/webitel/webrtc_recorder/internal/model"
+
 	"github.com/webitel/wlog"
-	"io"
+
+	"github.com/webitel/webrtc_recorder/internal/model"
 )
 
 type RtcUploadVideoSession struct {
@@ -134,7 +137,6 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 			}
 		}
 	}
-
 }
 
 func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrtc.ICEConnectionState) {

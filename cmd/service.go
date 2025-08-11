@@ -3,14 +3,17 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/urfave/cli/v2"
-	"github.com/webitel/webrtc_recorder/config"
-	"github.com/webitel/wlog"
-	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/config"
 )
 
 type App struct {
@@ -29,7 +32,6 @@ func NewApp(cfg *config.Config, ctx context.Context) *App {
 }
 
 func (a *App) Run() (func(), error) {
-
 	r, shutdown, err := initAppResources(a.ctx, a.cfg)
 	if err != nil {
 		return nil, err

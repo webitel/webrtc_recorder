@@ -2,10 +2,12 @@ package store
 
 import (
 	"context"
+
+	"github.com/webitel/wlog"
+
 	"github.com/webitel/webrtc_recorder/config"
 	"github.com/webitel/webrtc_recorder/infra/sql"
 	"github.com/webitel/webrtc_recorder/internal/model"
-	"github.com/webitel/wlog"
 )
 
 type FileJobStore struct {
@@ -92,7 +94,6 @@ returning x.*`, map[string]any{
 		"instance": s.instance,
 		"state":    model.JobActive,
 	})
-
 	if err != nil {
 		return nil, err
 	}

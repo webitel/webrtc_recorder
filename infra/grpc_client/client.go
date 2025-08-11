@@ -3,11 +3,13 @@ package grpc_client
 import (
 	"context"
 	"fmt"
-	"github.com/webitel/webrtc_recorder/infra/resolver"
+	"sync"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"sync"
+
+	"github.com/webitel/webrtc_recorder/infra/resolver"
 )
 
 const (
@@ -21,7 +23,7 @@ type Client[T any] struct {
 
 var conns sync.Map
 
-func NewClient[T any](consulTarget string, service string, api func(conn grpc.ClientConnInterface) T) (*Client[T], error) {
+func NewClient[T any](consulTarget, service string, api func(conn grpc.ClientConnInterface) T) (*Client[T], error) {
 	var conn *grpc.ClientConn
 	var err error
 
@@ -34,7 +36,6 @@ func NewClient[T any](consulTarget string, service string, api func(conn grpc.Cl
 			grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy": "wbt_round_robin"}`),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
-
 		if err != nil {
 			return nil, err
 		}

@@ -2,18 +2,22 @@ package webrtc
 
 import (
 	"fmt"
-	"github.com/pion/interceptor"
-	"github.com/pion/interceptor/pkg/intervalpli"
-	"github.com/pion/webrtc/v4"
-	"github.com/webitel/wlog"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/pion/interceptor"
+	"github.com/pion/interceptor/pkg/intervalpli"
+	"github.com/pion/webrtc/v4"
+
+	"github.com/webitel/wlog"
 )
 
-type SessionDescription = webrtc.SessionDescription
-type ICEServer = webrtc.ICEServer
-type PeerConnection = webrtc.PeerConnection
+type (
+	SessionDescription = webrtc.SessionDescription
+	ICEServer          = webrtc.ICEServer
+	PeerConnection     = webrtc.PeerConnection
+)
 
 type API interface {
 	NewPeerConnection(configuration webrtc.Configuration) (*webrtc.PeerConnection, error)
@@ -48,7 +52,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 	}
 
 	// TODO DisableActiveTCP ?
-	//s.DisableActiveTCP(false)
+	// s.DisableActiveTCP(false)
 	s.SetIPFilter(func(ip net.IP) bool {
 		return ip.To4() != nil
 	})

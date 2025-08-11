@@ -3,12 +3,13 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/webitel/webrtc_recorder/config"
-	"github.com/webitel/webrtc_recorder/internal/model"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/webitel/webrtc_recorder/config"
+	"github.com/webitel/webrtc_recorder/internal/model"
 )
 
 type TempFileService struct {
@@ -17,7 +18,7 @@ type TempFileService struct {
 
 func NewTempFileService(cfg *config.Config) *TempFileService {
 	if _, err := os.Stat(cfg.TempDir); os.IsNotExist(err) {
-		err = os.MkdirAll(cfg.TempDir, 0755)
+		err = os.MkdirAll(cfg.TempDir, 0o755)
 		if err != nil {
 			panic(err)
 		}
@@ -51,7 +52,7 @@ func (svc *TempFileService) NewWriter(file *model.File, ext string) (io.WriteClo
 		return nil, err
 	}
 
-	return os.OpenFile(file.Path, os.O_WRONLY|os.O_CREATE, 0644)
+	return os.OpenFile(file.Path, os.O_WRONLY|os.O_CREATE, 0o644)
 }
 
 func (svc *TempFileService) NewFilePath(file *model.File, ext string) error {
