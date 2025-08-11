@@ -19,10 +19,9 @@ import (
 	"github.com/webitel/webrtc_recorder/infra/grpc_client"
 )
 
-const (
-	RequestContextName    = "grpc_ctx"
-	RequestContextSession = "session"
-)
+const RequestContextName = "grpc_ctx"
+
+type RequestContextSessionKey struct{}
 
 var ErrUnauthenticated = status.Error(codes.Unauthenticated, "Unauthenticated")
 
@@ -148,7 +147,7 @@ func unaryInterceptor(am auth.Manager, log *wlog.Logger) grpc.UnaryServerInterce
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, RequestContextSession, session)
+		ctx = context.WithValue(ctx, RequestContextSessionKey{}, session)
 
 		h, err := handler(ctx, req)
 
@@ -204,7 +203,7 @@ func getSessionFromCtx(am auth.Manager, ctx context.Context) (metadata.MD, *auth
 }
 
 func SessionFromCtx(ctx context.Context) (*auth.Session, error) {
-	sess := ctx.Value(RequestContextSession)
+	sess := ctx.Value(RequestContextSessionKey{})
 	if sess == nil {
 		return nil, ErrUnauthenticated
 	}

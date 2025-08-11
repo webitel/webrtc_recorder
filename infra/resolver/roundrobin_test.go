@@ -52,7 +52,7 @@ func TestRrPicker_Pick(t *testing.T) {
 
 	t.Run("Static host picking", func(t *testing.T) {
 		// --- Arrange ---
-		ctx := context.WithValue(context.Background(), StaticHostKey, StaticHost{Name: "id2"})
+		ctx := context.WithValue(context.Background(), StaticHostKey{}, StaticHost{Name: "id2"})
 
 		// --- Act & Assert ---
 		// Всі виклики мають іти до sc2
@@ -65,7 +65,7 @@ func TestRrPicker_Pick(t *testing.T) {
 
 	t.Run("Static host not found", func(t *testing.T) {
 		// --- Arrange ---
-		ctx := context.WithValue(context.Background(), StaticHostKey, StaticHost{Name: "non-existent-id"})
+		ctx := context.WithValue(context.Background(), StaticHostKey{}, StaticHost{Name: "non-existent-id"})
 
 		// --- Act & Assert ---
 		_, err := picker.Pick(balancer.PickInfo{Ctx: ctx})

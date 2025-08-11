@@ -60,7 +60,7 @@ func (c *Client[T]) WithToken(ctx context.Context, token string) context.Context
 }
 
 func StaticHost(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, resolver.StaticHostKey, resolver.StaticHost{Name: name})
+	return context.WithValue(ctx, resolver.StaticHostKey{}, resolver.StaticHost{Name: name})
 }
 
 func WithToken(ctx context.Context, token string) context.Context {

@@ -88,10 +88,10 @@ type StaticHost struct {
 	Name string
 }
 
-var StaticHostKey struct{}
+type StaticHostKey struct{}
 
 func (p *rrPicker) Pick(r balancer.PickInfo) (balancer.PickResult, error) {
-	v := r.Ctx.Value(StaticHostKey)
+	v := r.Ctx.Value(StaticHostKey{})
 	if v != nil {
 		if sc, ok := p.subIDIndex[v.(StaticHost).Name]; ok {
 			return balancer.PickResult{SubConn: sc}, nil
