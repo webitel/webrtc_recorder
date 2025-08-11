@@ -9,18 +9,18 @@ const (
 	JobActive
 )
 
-type JobConfig struct {
-}
+type JobConfig struct{}
 
 type Job struct {
-	Id     int        `json:"id" db:"id"`
+	ID     int        `json:"id" db:"id"`
 	Type   string     `json:"type" db:"type"`
 	File   *File      `json:"file" db:"file"`
 	Config *JobConfig `json:"config" db:"config"`
 	Retry  int        `json:"retry" db:"retry"`
 }
 
-func (j *JobConfig) Json() []byte {
+func (j *JobConfig) JSON() []byte {
 	js, _ := json.Marshal(j)
+
 	return js
 }

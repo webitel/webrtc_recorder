@@ -3,41 +3,41 @@ package grpc_srv
 import (
 	"context"
 	"fmt"
-	"github.com/webitel/webrtc_recorder/infra/auth"
-	"github.com/webitel/webrtc_recorder/infra/grpc_client"
-	"github.com/webitel/wlog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
+	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/infra/auth"
+	"github.com/webitel/webrtc_recorder/infra/grpc_client"
 )
 
-const (
-	RequestContextName    = "grpc_ctx"
-	RequestContextSession = "session"
-)
+const RequestContextName = "grpc_ctx"
 
-var (
-	ErrUnauthenticated = status.Error(codes.Unauthenticated, "Unauthenticated")
-)
+type RequestContextSessionKey struct{}
+
+var ErrUnauthenticated = status.Error(codes.Unauthenticated, "Unauthenticated")
 
 type Server struct {
-	Addr string
-	host string
-	port int
-	log  *wlog.Logger
 	*grpc.Server
+
+	Addr     string
+	host     string
+	port     int
+	log      *wlog.Logger
 	listener net.Listener
 	auth     auth.Manager
 }
 
 // New provides a new gRPC server.
 func New(addr string, log *wlog.Logger, am auth.Manager) (*Server, error) {
-
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(),
 		grpc.UnaryInterceptor(unaryInterceptor(am, log)),
@@ -52,6 +52,7 @@ func New(addr string, log *wlog.Logger, am auth.Manager) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	port, _ := strconv.Atoi(p)
 
 	if h == "::" {
@@ -75,7 +76,8 @@ func (s *Server) Listen() error {
 func (s *Server) Shutdown() error {
 	s.log.Debug("receive shutdown grpc")
 	err := s.listener.Close()
-	s.Server.GracefulStop()
+	s.GracefulStop()
+
 	return err
 }
 
@@ -83,6 +85,7 @@ func (s *Server) Host() string {
 	if e, ok := os.LookupEnv("PROXY_GRPC_HOST"); ok {
 		return e
 	}
+
 	return s.host
 }
 
@@ -92,10 +95,10 @@ func (s *Server) Port() int {
 
 func publicAddr() string {
 	ifaces, err := net.Interfaces()
-
 	if err != nil {
 		return ""
 	}
+
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
 		if err != nil {
@@ -119,22 +122,24 @@ func publicAddr() string {
 			// process IP address
 		}
 	}
+
 	return ""
 }
 
-func isPublicIP(IP net.IP) bool {
-	if IP.IsLoopback() || IP.IsLinkLocalMulticast() || IP.IsLinkLocalUnicast() {
+func isPublicIP(ip net.IP) bool {
+	if ip.IsLoopback() || ip.IsLinkLocalMulticast() || ip.IsLinkLocalUnicast() {
 		return false
 	}
+
 	return true
 }
 
 func unaryInterceptor(am auth.Manager, log *wlog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler) (interface{}, error) {
-
+		handler grpc.UnaryHandler,
+	) (any, error) {
 		start := time.Now()
 
 		_, session, err := getSessionFromCtx(am, ctx)
@@ -142,7 +147,7 @@ func unaryInterceptor(am auth.Manager, log *wlog.Logger) grpc.UnaryServerInterce
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, RequestContextSession, session)
+		ctx = context.WithValue(ctx, RequestContextSessionKey{}, session)
 
 		h, err := handler(ctx, req)
 
@@ -159,11 +164,13 @@ func unaryInterceptor(am auth.Manager, log *wlog.Logger) grpc.UnaryServerInterce
 }
 
 func getSessionFromCtx(am auth.Manager, ctx context.Context) (metadata.MD, *auth.Session, error) {
-	var session *auth.Session
-	var err error
-	var token []string
-	var info metadata.MD
-	var ok bool
+	var (
+		session *auth.Session
+		err     error
+		token   []string
+		info    metadata.MD
+		ok      bool
+	)
 
 	v := ctx.Value(RequestContextName)
 	info, ok = v.(metadata.MD)
@@ -184,7 +191,6 @@ func getSessionFromCtx(am auth.Manager, ctx context.Context) (metadata.MD, *auth
 	}
 
 	session, err = am.GetSession(ctx, token[0])
-
 	if err != nil {
 		return info, nil, err
 	}
@@ -197,9 +203,10 @@ func getSessionFromCtx(am auth.Manager, ctx context.Context) (metadata.MD, *auth
 }
 
 func SessionFromCtx(ctx context.Context) (*auth.Session, error) {
-	sess := ctx.Value(RequestContextSession)
+	sess := ctx.Value(RequestContextSessionKey{})
 	if sess == nil {
 		return nil, ErrUnauthenticated
 	}
+
 	return sess.(*auth.Session), nil
 }

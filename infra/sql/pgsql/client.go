@@ -2,11 +2,14 @@ package pgsql
 
 import (
 	"context"
+
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/webitel/webrtc_recorder/infra/sql"
+
 	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/infra/sql"
 )
 
 type DB struct {
@@ -73,6 +76,7 @@ func (db *DB) Begin(ctx context.Context) (pgx.Tx, error) {
 
 func (db *DB) Close() error {
 	db.pool.Close()
+
 	return nil
 }
 

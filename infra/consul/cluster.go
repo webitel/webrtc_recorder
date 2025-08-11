@@ -2,8 +2,9 @@ package consul
 
 import (
 	"fmt"
-	"github.com/webitel/wlog"
 	"time"
+
+	"github.com/webitel/wlog"
 )
 
 var (
@@ -22,7 +23,7 @@ type Cluster struct {
 	log        *wlog.Logger
 }
 
-func NewCluster(name string, consulAddr string, log *wlog.Logger) *Cluster {
+func NewCluster(name, consulAddr string, log *wlog.Logger) *Cluster {
 	return &Cluster{
 		name:       name,
 		consulAddr: consulAddr,
@@ -30,7 +31,7 @@ func NewCluster(name string, consulAddr string, log *wlog.Logger) *Cluster {
 	}
 }
 
-func (c *Cluster) Start(serviceInstanceID string, host string, port int) error {
+func (c *Cluster) Start(serviceInstanceID, host string, port int) error {
 	consulClient, err := newConsul(
 		serviceInstanceID,
 		c.consulAddr,
@@ -59,6 +60,7 @@ func (c *Cluster) Start(serviceInstanceID string, host string, port int) error {
 	}
 
 	c.log.Info(fmt.Sprintf("Service '%s' (ID: %s) successfully registered with Consul.", c.name, serviceInstanceID))
+
 	return nil
 }
 
@@ -67,7 +69,7 @@ func (c *Cluster) Stop() {
 }
 
 func (c *Cluster) attemptConsulRegistration(config Config) error {
-	for i := 0; i < defaultReconnectAttempts; i++ {
+	for i := range defaultReconnectAttempts {
 		err := c.discovery.RegisterService(config)
 		if err == nil {
 			return nil // Успішна реєстрація
@@ -78,5 +80,6 @@ func (c *Cluster) attemptConsulRegistration(config Config) error {
 
 		time.Sleep(reconnectDuration)
 	}
+
 	return fmt.Errorf("exceeded maximum reconnect attempts (%d) for Consul registration", defaultReconnectAttempts)
 }

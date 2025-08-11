@@ -2,10 +2,12 @@ package store
 
 import (
 	"context"
+
+	"github.com/webitel/wlog"
+
 	"github.com/webitel/webrtc_recorder/config"
 	"github.com/webitel/webrtc_recorder/infra/sql"
 	"github.com/webitel/webrtc_recorder/internal/model"
-	"github.com/webitel/wlog"
 )
 
 type FileJobStore struct {
@@ -19,7 +21,7 @@ func NewFileJobStore(ctx context.Context, log *wlog.Logger, cfg *config.Config, 
 	fjs := &FileJobStore{
 		db:       db,
 		ctx:      ctx,
-		instance: cfg.Service.Id,
+		instance: cfg.Service.ID,
 		log:      log.With(wlog.String("store", "file_jobs")),
 	}
 
@@ -36,8 +38,8 @@ func (s *FileJobStore) Create(jobType string, cfg *model.JobConfig, f *model.Fil
 values (@type, @instance, @file, @config)`, map[string]any{
 		"type":     jobType,
 		"instance": s.instance,
-		"file":     f.Json(),
-		"config":   cfg.Json(),
+		"file":     f.JSON(),
+		"config":   cfg.JSON(),
 	})
 }
 
@@ -51,11 +53,11 @@ set state = @state,
     retry = @retry,
     activity_at = now()
 where id = @id`, map[string]any{
-		"id":     j.Id,
+		"id":     j.ID,
 		"state":  state,
 		"type":   j.Type,
-		"file":   j.File.Json(),
-		"config": j.Config.Json(),
+		"file":   j.File.JSON(),
+		"config": j.Config.JSON(),
 		"error":  nil, // TODO
 		"retry":  j.Retry,
 	})
@@ -72,6 +74,7 @@ where instance = @instance;`, map[string]any{
 
 func (s *FileJobStore) Fetch(limit int, jobType string) ([]*model.Job, error) {
 	var jobs []*model.Job
+
 	err := s.db.Select(s.ctx, &jobs, `update webrtc_rec.file_jobs j
 set state = @state,
     activity_at = now(),
@@ -84,7 +87,7 @@ from (
     	and type = @type
     order by created_at
     limit @limit
-) x 
+) x
 where x.id = j.id
 returning x.*`, map[string]any{
 		"limit":    limit,
@@ -92,7 +95,6 @@ returning x.*`, map[string]any{
 		"instance": s.instance,
 		"state":    model.JobActive,
 	})
-
 	if err != nil {
 		return nil, err
 	}

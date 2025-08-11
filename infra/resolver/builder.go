@@ -2,13 +2,14 @@ package resolver
 
 import (
 	"context"
-	"github.com/webitel/wlog"
+	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/resolver"
+
+	"github.com/webitel/wlog"
 )
 
 // schemeName for the urls
@@ -24,12 +25,14 @@ var consulClients sync.Map
 
 func (b *builder) Build(url resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	dsn := strings.Join([]string{schemeName + ":/", url.URL.Host + url.URL.Path + "?" + url.URL.RawQuery}, "/")
+
 	tgt, err := parseURL(dsn)
 	if err != nil {
-		return nil, errors.Wrap(err, "Wrong consul URL")
+		return nil, fmt.Errorf("wrong consul URL: %w", err)
 	}
 
 	cfg := tgt.consulConfig()
+
 	var cli *api.Client
 
 	if c, ok := consulClients.Load(cfg.Address); ok {
@@ -40,10 +43,11 @@ func (b *builder) Build(url resolver.Target, cc resolver.ClientConn, opts resolv
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Couldn't connect to the Consul API")
+		return nil, fmt.Errorf("couldn't connect to the Consul API: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	pipe := make(chan []serviceMeta)
 	go watchConsulService(ctx, cli.Health(), tgt, pipe)
 	go populateEndpoints(ctx, cc, pipe)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/webitel/webrtc_recorder/cmd"
 )
 
@@ -14,6 +15,7 @@ import (
 func main() {
 	if err := cmd.Run(); err != nil {
 		fmt.Println(err.Error())
+
 		return
 	}
 }

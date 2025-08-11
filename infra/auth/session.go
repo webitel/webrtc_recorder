@@ -2,27 +2,27 @@ package auth
 
 import (
 	"context"
-	"github.com/webitel/wlog"
+	"time"
+
 	"go.uber.org/atomic"
 	"golang.org/x/sync/singleflight"
-	"time"
+
+	"github.com/webitel/wlog"
 )
 
-var (
-	sessionGroupRequest singleflight.Group
-)
+var sessionGroupRequest singleflight.Group
 
 const tokenRequestTimeout = time.Second * 15
 
 type Session struct {
-	Id         string        `json:"id"`
+	ID         string        `json:"id"`
 	Name       string        `json:"name"`
-	DomainId   int64         `json:"domain_id"`
+	DomainID   int64         `json:"domain_id"`
 	DomainName string        `json:"domain_name"`
 	Expire     int64         `json:"expire"`
-	UserId     int64         `json:"user_id"`
-	userIp     atomic.String `json:"user_ip"`
-	RoleIds    []int         `json:"role_ids"`
+	UserID     int64         `json:"user_id"`
+	userIP     atomic.String `json:"user_ip"`
+	RoleIDs    []int         `json:"role_ids"`
 
 	Token            string              `json:"token"`
 	Scopes           []SessionPermission `json:"scopes"`
@@ -32,12 +32,12 @@ type Session struct {
 	validLicense     []string
 }
 
-func (self *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool {
+func (s *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool {
 	if !perm.rbac {
 		return false
 	}
 
-	for _, v := range self.adminPermissions {
+	for _, v := range s.adminPermissions {
 		if v == acc {
 			return false
 		}
@@ -46,12 +46,12 @@ func (self *Session) UseRBAC(acc PermissionAccess, perm SessionPermission) bool 
 	return perm.rbac
 }
 
-func (self *Session) GetAclRoles() []int {
-	return self.RoleIds
+func (s *Session) GetAclRoles() []int {
+	return s.RoleIDs
 }
 
-func (self *Session) HasLicense(name string) bool {
-	for _, v := range self.validLicense {
+func (s *Session) HasLicense(name string) bool {
+	for _, v := range s.validLicense {
 		if v == name {
 			return true
 		}
@@ -60,46 +60,47 @@ func (self *Session) HasLicense(name string) bool {
 	return false
 }
 
-func (self *Session) GetUserId() int64 {
-	return self.UserId
+func (s *Session) GetUserID() int64 {
+	return s.UserID
 }
 
-func (self *Session) GetDomainId() int64 {
-	return self.DomainId
+func (s *Session) GetDomainID() int64 {
+	return s.DomainID
 }
 
-func (self *Session) SetIp(ip string) {
-	self.userIp.Store(ip)
+func (s *Session) SetIP(ip string) {
+	s.userIP.Store(ip)
 }
 
-func (self *Session) GetUserIp() string {
-	return self.userIp.Load()
+func (s *Session) GetUserIP() string {
+	return s.userIP.Load()
 }
 
-func (self *Session) HasCallCenterLicense() bool {
-	return self.HasLicense(LicenseCallCenter)
+func (s *Session) HasCallCenterLicense() bool {
+	return s.HasLicense(LicenseCallCenter)
 }
 
-func (self *Session) HasChatLicense() bool {
-	return self.HasLicense(LicenseChat)
+func (s *Session) HasChatLicense() bool {
+	return s.HasLicense(LicenseChat)
 }
 
-func (self *Session) CountLicenses() int {
-	return len(self.active)
+func (s *Session) CountLicenses() int {
+	return len(s.active)
 }
 
-func (self *Session) GetPermission(name string) SessionPermission {
-	for _, v := range self.Scopes {
+func (s *Session) GetPermission(name string) SessionPermission {
+	for _, v := range s.Scopes {
 		if v.Name == name {
 			return v
 		}
 	}
+
 	return NotAllowPermission(name)
 }
 
 func NotAllowPermission(name string) SessionPermission {
 	return SessionPermission{
-		Id:     0,
+		ID:     0,
 		Name:   name,
 		Obac:   true,
 		rbac:   true,
@@ -112,39 +113,40 @@ func GetMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func (self *Session) IsExpired() bool {
-	return self.Expire*1000 < GetMillis()
+func (s *Session) IsExpired() bool {
+	return s.Expire*1000 < GetMillis()
 }
 
-func (self *Session) Trace() map[string]interface{} {
-	return map[string]interface{}{"id": self.Id, "domain_id": self.DomainId}
+func (s *Session) Trace() map[string]any {
+	return map[string]any{"id": s.ID, "domain_id": s.DomainID}
 }
 
-func (self *Session) IsValid() error {
+func (s *Session) IsValid() error {
+	if len(s.ID) < 1 {
+		return ErrValidID
+	}
 
-	if len(self.Id) < 1 {
-		return ErrValidId
+	if s.UserID < 1 {
+		return ErrValidUserID
 	}
-	if self.UserId < 1 {
-		return ErrValidUserId
-	}
-	if len(self.Token) < 1 {
+
+	if len(s.Token) < 1 {
 		return ErrValidToken
 	}
 
-	//if self.DomainId < 1 {
+	// if self.DomainId < 1 {
 	//	return model.NewBadRequestError("model.session.is_valid.domain_id.app_error", "").SetTranslationParams(self.Trace())
-	//}
+	// }
 
-	if len(self.RoleIds) < 1 {
-		return ErrValidRoleIds
+	if len(s.RoleIDs) < 1 {
+		return ErrValidRoleIDs
 	}
 
 	return nil
 }
 
-func (self *Session) HasAction(name string) bool {
-	for _, v := range self.actions {
+func (s *Session) HasAction(name string) bool {
+	for _, v := range s.actions {
 		if v == name {
 			return true
 		}
@@ -154,18 +156,16 @@ func (self *Session) HasAction(name string) bool {
 }
 
 func (am *authManager) getSession(c context.Context, token string) (Session, error) {
-
 	if v, ok := am.session.Get(token); ok {
 		return *v, nil
 	}
 
-	result, err, shared := sessionGroupRequest.Do(token, func() (interface{}, error) {
+	result, err, shared := sessionGroupRequest.Do(token, func() (any, error) {
 		ctx, cancel := context.WithTimeout(c, tokenRequestTimeout)
 		defer cancel()
 
 		return am.GetSession(ctx, token)
 	})
-
 	if err != nil {
 		return Session{}, err
 	}

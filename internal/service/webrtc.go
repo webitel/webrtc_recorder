@@ -2,11 +2,14 @@ package service
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/pion/webrtc/v4"
+
+	"github.com/webitel/wlog"
+
 	webrtci "github.com/webitel/webrtc_recorder/infra/webrtc"
 	"github.com/webitel/webrtc_recorder/internal/model"
-	"github.com/webitel/wlog"
-	"io"
 )
 
 type SessionStore interface {
@@ -35,9 +38,11 @@ func NewWebRtcRecorder(log *wlog.Logger, api webrtci.API, sess SessionStore, tmp
 }
 
 func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice []webrtci.ICEServer) (model.RtcUploadVideoSession, error) {
-	var peerConnection *webrtc.PeerConnection
-	var err error
-	var writer io.WriteCloser
+	var (
+		peerConnection *webrtc.PeerConnection
+		err            error
+		writer         io.WriteCloser
+	)
 
 	config := webrtc.Configuration{
 		ICEServers: ice,
@@ -53,6 +58,7 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 	}
 
 	writeFile := &file
+
 	writer, err = svc.temp.NewWriter(writeFile, "raw")
 	if err != nil {
 		return nil, err
@@ -63,6 +69,7 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 	err = session.negotiate(sdpOffer)
 	if err != nil {
 		session.close()
+
 		return nil, err
 	}
 
@@ -73,17 +80,19 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 	return session, nil
 }
 
-func (svc *WebRtcRecorder) RenegotiateP2P(id string, sdpOffer string) (model.RtcUploadVideoSession, error) {
+func (svc *WebRtcRecorder) RenegotiateP2P(id, sdpOffer string) (model.RtcUploadVideoSession, error) {
 	session, err := svc.sessions.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("p2p session with id %s not found", id)
 	}
+
 	sess := session.(*RtcUploadVideoSession)
 
 	// TODO singleflight
 	err = sess.negotiate(sdpOffer)
 	if err != nil {
 		sess.close()
+
 		return nil, err
 	}
 
@@ -98,18 +107,21 @@ func (svc *WebRtcRecorder) CloseP2P(id string) error {
 
 	// TODO singleflight
 	session.(*RtcUploadVideoSession).close()
+
 	return nil
 }
 
 func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadVideoSession) {
 	if !svc.sessions.Remove(s.id) {
 		s.log.Debug("closing peer connection")
+
 		return
 	}
 
 	err := svc.transcoding.CreateJob(s.file)
 	if err != nil {
 		s.log.Error(err.Error(), wlog.Err(err))
+
 		err = svc.temp.DeleteFile(s.file)
 		if err != nil {
 			s.log.Error(err.Error(), wlog.Err(err))

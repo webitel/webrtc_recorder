@@ -64,7 +64,7 @@ func TranscodingByPath(src, dst string) error {
 	}
 
 	cmd := exec.Command("ffmpeg", args...)
-	//cmd.Stderr = os.Stderr // bind log stream to stderr
+	// cmd.Stderr = os.Stderr // bind log stream to stderr
 	err := cmd.Start()
 	if err != nil {
 		return err

@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
-	"github.com/webitel/webrtc_recorder/internal/model"
+
 	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/internal/model"
 )
 
 type jobHandler struct {
@@ -25,11 +27,11 @@ func (svc *jobHandler) errorJob(j *baseJob, maxRetry int, err error) {
 	if j.job.Retry >= maxRetry {
 		j.log.Error("max attempts reached")
 		svc.cleanup(j)
-		return
 
+		return
 	}
 
-	err = svc.jobStore.SetError(j.job.Id, err)
+	err = svc.jobStore.SetError(j.job.ID, err)
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}
@@ -40,7 +42,8 @@ func (svc *jobHandler) cleanup(j *baseJob) {
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}
-	err = svc.jobStore.Delete(j.job.Id)
+
+	err = svc.jobStore.Delete(j.job.ID)
 	if err != nil {
 		j.log.Error(err.Error(), wlog.Err(err))
 	}

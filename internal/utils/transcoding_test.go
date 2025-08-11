@@ -29,6 +29,7 @@ func testVP9(t *testing.T) {
 		panic(err)
 	}
 	defer tr.Close()
+
 	err = tr.Start()
 	if err != nil {
 		panic(err)

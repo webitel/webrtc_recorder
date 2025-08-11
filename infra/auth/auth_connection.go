@@ -3,13 +3,14 @@ package auth
 import (
 	"context"
 	"errors"
-	"github.com/webitel/webrtc_recorder/infra/grpc_client"
 	"strings"
 	"time"
 
-	"github.com/webitel/webrtc_recorder/gen/api"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/webitel/webrtc_recorder/gen/api"
+	"github.com/webitel/webrtc_recorder/infra/grpc_client"
 )
 
 const (
@@ -20,33 +21,35 @@ const (
 	LicenseWFM         = "WFM"
 )
 
-func (am *authManager) ProductLimit(ctx context.Context, token string, productName string) (int, error) {
+func (am *authManager) ProductLimit(ctx context.Context, token, productName string) (int, error) {
 	outCtx := grpc_client.WithToken(ctx, token)
-	tenant, err := am.customer.Api.GetCustomer(outCtx, &api.GetCustomerRequest{})
 
+	tenant, err := am.customer.API.GetCustomer(outCtx, &api.GetCustomerRequest{})
 	if err != nil {
 		return 0, err
 	}
 
-	if tenant.Customer == nil {
+	if tenant.GetCustomer() == nil {
 		return 0, errors.New("")
 	}
 
 	var limitMax int32
 
-	for _, grant := range tenant.Customer.GetLicense() {
-		if grant.Product != productName {
+	for _, grant := range tenant.GetCustomer().GetLicense() {
+		if grant.GetProduct() != productName {
 			continue // Lookup productName only !
 		}
+
 		if errs := grant.GetStatus().GetErrors(); len(errs) != 0 {
 			// Also, ignore single 'product exhausted' (remain < 1) error
 			// as we do not consider product user assignments here ...
-			if !(len(errs) == 1 && errs[0] == "product exhausted") {
+			if len(errs) != 1 || errs[0] != "product exhausted" {
 				continue // Currently invalid
 			}
 		}
-		if limitMax < grant.Remain {
-			limitMax = grant.Remain
+
+		if limitMax < grant.GetRemain() {
+			limitMax = grant.GetRemain()
 		}
 	}
 
@@ -61,8 +64,7 @@ func (am *authManager) ProductLimit(ctx context.Context, token string, productNa
 func (am *authManager) GetSession(c context.Context, token string) (*Session, error) {
 	ctx := grpc_client.WithToken(c, token)
 
-	resp, err := am.auth.Api.UserInfo(ctx, &api.UserinfoRequest{})
-
+	resp, err := am.auth.API.UserInfo(ctx, &api.UserinfoRequest{})
 	if err != nil {
 		if status.Code(err) == codes.Unauthenticated {
 			return nil, ErrStatusUnauthenticated
@@ -76,24 +78,24 @@ func (am *authManager) GetSession(c context.Context, token string) (*Session, er
 	}
 
 	session := &Session{
-		Id:         token,
-		UserId:     resp.UserId,
-		DomainId:   resp.Dc,
-		DomainName: resp.Domain,
-		Expire:     resp.ExpiresAt,
+		ID:         token,
+		UserID:     resp.GetUserId(),
+		DomainID:   resp.GetDc(),
+		DomainName: resp.GetDomain(),
+		Expire:     resp.GetExpiresAt(),
 		Token:      token,
-		RoleIds:    transformRoles(resp.UserId, resp.Roles), // /FIXME
-		Scopes:     transformScopes(resp.Scope),
+		RoleIDs:    transformRoles(resp.GetUserId(), resp.GetRoles()), // /FIXME
+		Scopes:     transformScopes(resp.GetScope()),
 		actions:    make([]string, 0, 1),
-		Name:       resp.Name,
+		Name:       resp.GetName(),
 	}
 
 	session.validLicense, session.active = licenseActiveScope(resp)
 
-	if len(resp.Permissions) > 0 {
-		session.adminPermissions = make([]PermissionAccess, len(resp.Permissions), len(resp.Permissions))
-		for _, v := range resp.Permissions {
-			switch v.Id {
+	if len(resp.GetPermissions()) > 0 {
+		session.adminPermissions = make([]PermissionAccess, len(resp.GetPermissions()), len(resp.GetPermissions()))
+		for _, v := range resp.GetPermissions() {
+			switch v.GetId() {
 			case "add":
 				session.adminPermissions = append(session.adminPermissions, PERMISSION_ACCESS_CREATE)
 			case "read":
@@ -129,18 +131,20 @@ func (am *authManager) GetSession(c context.Context, token string) (*Session, er
 //	{ obac:true, access:"r" }
 func transformScopes(src []*api.Objclass) []SessionPermission {
 	dst := make([]SessionPermission, 0, len(src))
+
 	var access int
 	for _, v := range src {
-		access, _ = parseAccess(v.Access) //
+		access, _ = parseAccess(v.GetAccess()) //
 		dst = append(dst, SessionPermission{
-			Id:   int(v.Id),
-			Name: v.Class,
+			ID:   int(v.GetId()),
+			Name: v.GetClass(),
 			// Abac:   v.Abac,
-			Obac:   v.Obac,
-			rbac:   v.Rbac,
+			Obac:   v.GetObac(),
+			rbac:   v.GetRbac(),
 			Access: uint32(access),
 		})
 	}
+
 	return dst
 }
 
@@ -148,7 +152,7 @@ func transformScopes(src []*api.Objclass) []SessionPermission {
 // active now within their validity boundaries
 func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 	var (
-		l           = len(src.License)
+		l           = len(src.GetLicense())
 		validLicene = make([]string, 0, l)
 		now         = time.Now().UnixMilli()
 		scope       = make([]string, 0, len(src.GetScope()))
@@ -156,6 +160,7 @@ func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 		objClass = func(name string) string {
 			name = strings.TrimSpace(name)
 			name = strings.ToLower(name)
+
 			return name
 		}
 		// indicates whether such `name` exists in scope
@@ -167,10 +172,12 @@ func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 			if len(name) == 0 {
 				return true // len(scope) != 0
 			}
+
 			e, n := 0, len(scope)
 			for ; e < n && scope[e] != name; e++ {
 				// break; match found !
 			}
+
 			return e < n
 		}
 		// add unique `setof` to the scope
@@ -181,6 +188,7 @@ func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 				if len(name) == 0 {
 					continue
 				}
+
 				if !hasScope(name) {
 					scope = append(scope, name)
 				}
@@ -188,18 +196,19 @@ func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 		}
 	)
 	// gather active only products scopes
-	for _, prod := range src.License {
-		if len(prod.Scope) == 0 {
+	for _, prod := range src.GetLicense() {
+		if len(prod.GetScope()) == 0 {
 			continue // forceless
 		}
-		if 0 < prod.ExpiresAt && prod.ExpiresAt <= now {
+
+		if 0 < prod.GetExpiresAt() && prod.GetExpiresAt() <= now {
 			// Expired ! Grant READONLY access
-		} else if 0 < prod.IssuedAt && now < prod.IssuedAt {
+		} else if 0 < prod.GetIssuedAt() && now < prod.GetIssuedAt() {
 			// Inactive ! No access grant yet !
 		} else {
 			// Active ! +OK
-			addScope(prod.Scope)
-			validLicene = append(validLicene, prod.Prod)
+			addScope(prod.GetScope())
+			validLicene = append(validLicene, prod.GetProd())
 		}
 	}
 
@@ -210,36 +219,42 @@ func licenseActiveScope(src *api.Userinfo) ([]string, []string) {
 
 	var (
 		objclass        string
-		e, n            = 0, len(src.Scope)
+		e, n            = 0, len(src.GetScope())
 		caseIgnoreMatch = strings.EqualFold
 	)
 	for i := 0; i < len(scope); i++ {
 		objclass = scope[i]
-		for e = 0; e < n && !caseIgnoreMatch(src.Scope[e].Class, objclass); e++ {
+		for e = 0; e < n && !caseIgnoreMatch(src.GetScope()[e].GetClass(), objclass); e++ {
 			// Lookup for caseIgnoreMatch(!) with userinfo.Scope OBAC grants
 		}
+
 		if e == n {
 			// NOT FOUND ?! OBAC Policy: Access Denied ?!
 			scope = append(scope[0:i], scope[i+1:]...)
 			i--
+
 			continue
 		}
 	}
+
 	return validLicene, scope
 }
 
-func transformRoles(userId int64, src []*api.ObjectId) []int {
+func transformRoles(userID int64, src []*api.ObjectId) []int {
 	dst := make([]int, 0, len(src)+1)
-	dst = append(dst, int(userId))
+
+	dst = append(dst, int(userID))
 	for _, v := range src {
-		dst = append(dst, int(v.Id))
+		dst = append(dst, int(v.GetId()))
 	}
+
 	return dst
 }
 
 func parseAccess(s string) (grants int, err error) {
 	// grants = 0 // NoAccess
 	var grant int
+
 	for _, c := range s {
 		switch c {
 		case 'x':
@@ -253,11 +268,15 @@ func parseAccess(s string) (grants int, err error) {
 		default:
 			return 0, ErrValidScope
 		}
+
 		if (grants & grant) == grant { // grants.HasMode(grant)
 			grants |= (grant << 4) // grants.GrantMode(grant)
+
 			continue
 		}
+
 		grants |= grant // grants.SetMode(grant)
 	}
+
 	return grants, nil
 }

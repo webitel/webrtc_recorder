@@ -1,9 +1,9 @@
 package auth
 
 type SessionPermission struct {
-	Id   int    `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
-	//Abac   bool   `json:"abac"`
+	// Abac   bool   `json:"abac"`
 	Obac   bool   `json:"obac"`
 	rbac   bool   `json:"rbac"`
 	Access uint32 `json:"access"`
@@ -38,13 +38,14 @@ func (p PermissionAccess) Name() string {
 }
 
 func (s *Session) Domain(_ int64) int64 {
-	return s.DomainId
+	return s.DomainID
 }
 
 func (s SessionPermission) CanCreate() bool {
 	if s.Obac || s.rbac {
 		return s.Access&PERMISSION_ACCESS_CREATE.Value() == PERMISSION_ACCESS_CREATE.Value()
 	}
+
 	return !s.rbac && !s.Obac
 }
 
@@ -52,6 +53,7 @@ func (s SessionPermission) CanRead() bool {
 	if s.Obac || s.rbac {
 		return s.Access&PERMISSION_ACCESS_READ.Value() == PERMISSION_ACCESS_READ.Value()
 	}
+
 	return !s.rbac && !s.Obac
 }
 
@@ -59,6 +61,7 @@ func (s SessionPermission) CanUpdate() bool {
 	if s.Obac || s.rbac {
 		return s.Access&PERMISSION_ACCESS_UPDATE.Value() == PERMISSION_ACCESS_UPDATE.Value()
 	}
+
 	return !s.rbac && !s.Obac
 }
 
@@ -66,5 +69,6 @@ func (s SessionPermission) CanDelete() bool {
 	if s.Obac || s.rbac {
 		return s.Access&PERMISSION_ACCESS_DELETE.Value() == PERMISSION_ACCESS_DELETE.Value()
 	}
+
 	return !s.rbac && !s.Obac
 }

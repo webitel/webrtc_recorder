@@ -13,13 +13,13 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/webitel/webrtc_recorder/infra/sql"
+
 	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/infra/sql"
 )
 
-var (
-	testStore sql.Store
-)
+var testStore sql.Store
 
 // testUser - це структура для тестування.
 type testUser struct {
@@ -116,6 +116,7 @@ func TestDB_Exec_And_Get(t *testing.T) {
 
 		// Використовуємо Get для отримання вставленого запису
 		var retrievedUser testUser
+
 		getQuery := "SELECT * FROM test_users WHERE name = @name"
 		getArgs := pgx.NamedArgs{"name": userName}
 		err = testStore.Get(ctx, &retrievedUser, getQuery, getArgs)
@@ -130,6 +131,7 @@ func TestDB_Exec_And_Get(t *testing.T) {
 	t.Run("Get non-existing user", func(t *testing.T) {
 		// --- Arrange ---
 		var retrievedUser testUser
+
 		getQuery := "SELECT * FROM test_users WHERE name = @name"
 		getArgs := pgx.NamedArgs{"name": "NonExistentUser"}
 
@@ -167,6 +169,7 @@ func TestDB_Select(t *testing.T) {
 
 	// --- Act ---
 	var retrievedUsers []testUser
+
 	err = testStore.Select(ctx, &retrievedUsers, "SELECT * FROM test_users ORDER BY name", nil)
 
 	// --- Assert ---
@@ -190,12 +193,14 @@ func TestDB_Query(t *testing.T) {
 	// --- Act ---
 	rows, err := testStore.Query(ctx, "SELECT id, name, age FROM test_users WHERE name = 'David'", nil)
 	require.NoError(t, err, "Query should not return an error")
+
 	defer rows.Close()
 
 	// --- Assert ---
 	require.True(t, rows.Next(), "Should be one row in the result set")
 
 	var user testUser
+
 	err = rows.Scan(&user.ID, &user.Name, &user.Age)
 	require.NoError(t, err, "Scan should not return an error")
 

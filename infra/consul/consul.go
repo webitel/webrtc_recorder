@@ -3,10 +3,12 @@ package consul
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/consul/api"
-	"github.com/webitel/wlog"
 	"net/http"
 	"time"
+
+	"github.com/hashicorp/consul/api"
+
+	"github.com/webitel/wlog"
 )
 
 type CheckFunction func() error
@@ -20,7 +22,7 @@ type Consul struct {
 	ready             bool
 	config            *Config
 	log               *wlog.Logger
-	serviceInstanceId string
+	serviceInstanceID string
 }
 
 type Config struct {
@@ -38,7 +40,7 @@ type Config struct {
 // check: функція, яка повертає nil, якщо сервіс здоровий, або error, якщо ні.
 // log: logger
 // consulAgentAddr: адреса Consul агента.
-func NewConsul(id string, consulAgentAddr string, log *wlog.Logger, check CheckFunction) (*Consul, error) {
+func NewConsul(id, consulAgentAddr string, log *wlog.Logger, check CheckFunction) (*Consul, error) {
 	if check == nil {
 		return nil, errors.New("check function cannot be nil")
 	}
@@ -68,10 +70,10 @@ func NewConsul(id string, consulAgentAddr string, log *wlog.Logger, check CheckF
 func (c *Consul) RegisterService(config Config) error {
 	c.config = &config
 
-	c.serviceInstanceId = fmt.Sprintf("%s-%s", config.Name, c.id)
+	c.serviceInstanceID = fmt.Sprintf("%s-%s", config.Name, c.id)
 
 	serviceRegistration := &api.AgentServiceRegistration{
-		ID:      c.serviceInstanceId,
+		ID:      c.serviceInstanceID,
 		Name:    config.Name,
 		Tags:    config.Tags,
 		Address: config.Address,
@@ -100,12 +102,14 @@ func (c *Consul) startTTLUpdater(interval time.Duration) {
 	// --- FIX STARTS HERE ---
 	// Add a guard clause to prevent panics from a zero or negative interval.
 	if interval <= 0 {
-		c.log.Error(fmt.Sprintf("Invalid TTL interval (%v) for service ID: %s. TTL updater will not start.", interval, c.serviceInstanceId))
+		c.log.Error(fmt.Sprintf("Invalid TTL interval (%v) for service ID: %s. TTL updater will not start.", interval, c.serviceInstanceID))
+
 		return
 	}
 	// --- FIX ENDS HERE ---
 
-	defer c.log.Info(fmt.Sprintf("Stopped Consul TTL updater for service ID: %s", c.serviceInstanceId))
+	defer c.log.Info(fmt.Sprintf("Stopped Consul TTL updater for service ID: %s", c.serviceInstanceID))
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -121,11 +125,11 @@ func (c *Consul) startTTLUpdater(interval time.Duration) {
 
 func (c *Consul) updateTTLStatus() {
 	err := c.check()
-
 	if err != nil {
 		if agentErr := c.agent.FailTTL(c.checkID, err.Error()); agentErr != nil {
 			c.handleTTLUpdateError(agentErr)
 		}
+
 		c.ready = false
 	} else {
 		if agentErr := c.agent.PassTTL(c.checkID, "Service is healthy."); agentErr != nil {
@@ -142,6 +146,7 @@ func (c *Consul) handleTTLUpdateError(err error) {
 		// Перевіряємо, чи це помилка сервера Consul
 		if apiErr.Code == http.StatusInternalServerError {
 			c.log.Error(fmt.Sprintf("Consul returned internal server error during TTL update. Attempting to re-register service ID: %s. Error: %s", c.id, err.Error()))
+
 			if c.config != nil {
 				if regErr := c.RegisterService(*c.config); regErr != nil {
 					c.log.Error(fmt.Sprintf("Failed to re-register service %s (ID: %s) with Consul: %s", c.config.Name, c.id, regErr.Error()))
@@ -162,7 +167,8 @@ func (c *Consul) IsReady() bool {
 func (c *Consul) Shutdown() {
 	c.log.Info(fmt.Sprintf("Deregistering service ID: %s from Consul...", c.id))
 	close(c.stop) // Сигналізуємо горутині зупинитися
-	if err := c.agent.ServiceDeregister(c.serviceInstanceId); err != nil {
+
+	if err := c.agent.ServiceDeregister(c.serviceInstanceID); err != nil {
 		c.log.Error(fmt.Sprintf("Failed to deregister service ID: %s from Consul: %s", c.id, err.Error()))
 	} else {
 		c.log.Info(fmt.Sprintf("Service ID: %s successfully deregistered from Consul.", c.id))

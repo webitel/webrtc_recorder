@@ -1,15 +1,16 @@
 package config
 
 import (
-	"github.com/urfave/cli/v2"
 	"time"
+
+	"github.com/urfave/cli/v2"
 )
 
 type Config struct {
 	TempDir     string
 	Service     Service
 	Log         LogSettings
-	SqlSettings SqlSettings
+	SQLSettings SQLSettings
 	Rtc         RtcSettings
 	Uploader    UploaderSettings
 	Transcoding TranscodingSettings
@@ -27,19 +28,19 @@ type UploaderSettings struct {
 	MaxRetry int
 }
 
-type SqlSettings struct {
+type SQLSettings struct {
 	DSN string
 }
 
 type Service struct {
-	Id      string
+	ID      string
 	Address string
 	Consul  string
 }
 
 type RtcSettings struct {
 	Codecs cli.StringSlice
-	//Network cli.StringSlice
+	// Network cli.StringSlice
 	Ice struct {
 		DisconnectedTimeout time.Duration
 		FailedTimeout       time.Duration
@@ -50,7 +51,7 @@ type RtcSettings struct {
 
 type LogSettings struct {
 	Lvl     string
-	Json    bool
+	JSON    bool
 	Otel    bool
 	File    string
 	Console bool

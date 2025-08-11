@@ -3,13 +3,14 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"github.com/webitel/wlog"
 	"sort"
 	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/jpillora/backoff"
 	"google.golang.org/grpc/resolver"
+
+	"github.com/webitel/wlog"
 )
 
 // init function needs for  auto-register in resolvers registry
@@ -52,6 +53,7 @@ func watchConsulService(ctx context.Context, s Servicer, tgt target, out chan<- 
 		Min:    10 * time.Millisecond,
 		Max:    tgt.MaxBackoff,
 	}
+
 	go func() {
 		var lastIndex uint64
 		for {
@@ -69,7 +71,7 @@ func watchConsulService(ctx context.Context, s Servicer, tgt target, out chan<- 
 				},
 			)
 			if err != nil {
-				// No need to continue if the context is done/cancelled.
+				// No need to continue if the context is done/canceled.
 				// We check that here directly because the check for the closed quit channel
 				// at the end of the loop is not reached when calling continue here.
 				select {
@@ -78,12 +80,15 @@ func watchConsulService(ctx context.Context, s Servicer, tgt target, out chan<- 
 				default:
 					wlog.Error(fmt.Sprintf("[Consul resolver] Couldn't fetch endpoints. target={%s}; error={%v}", tgt.String(), err))
 					time.Sleep(bck.Duration())
+
 					continue
 				}
 			}
+
 			bck.Reset()
+
 			lastIndex = meta.LastIndex
-			//wlog.Debug(fmt.Sprintf("[Consul resolver] %d endpoints fetched in(+wait) %s for target={%s}",
+			// wlog.Debug(fmt.Sprintf("[Consul resolver] %d endpoints fetched in(+wait) %s for target={%s}",
 			//	len(ss),
 			//	meta.RequestTime,
 			//	tgt.String(),
@@ -95,6 +100,7 @@ func watchConsulService(ctx context.Context, s Servicer, tgt target, out chan<- 
 				if s.Service.Address == "" {
 					address = s.Node.Address
 				}
+
 				ee = append(ee, serviceMeta{
 					addr: fmt.Sprintf("%s:%d", address, s.Service.Port),
 					id:   s.Service.ID,
@@ -104,6 +110,7 @@ func watchConsulService(ctx context.Context, s Servicer, tgt target, out chan<- 
 			if tgt.Limit != 0 && len(ee) > tgt.Limit {
 				ee = ee[:tgt.Limit]
 			}
+
 			select {
 			case res <- ee:
 				continue
@@ -122,13 +129,16 @@ func watchConsulService(ctx context.Context, s Servicer, tgt target, out chan<- 
 			// Do NOT close res because that can lead to panics in the goroutine.
 			// res will be garbage collected at some point.
 			close(quit)
+
 			return
 		}
+
 		select {
 		case ee := <-res:
 			out <- ee
 		case <-ctx.Done():
 			close(quit)
+
 			return
 		}
 	}
@@ -142,14 +152,18 @@ func populateEndpoints(ctx context.Context, clientConn resolver.ClientConn, inpu
 			for _, v := range cc {
 				conns = append(conns, resolver.Address{Addr: v.addr, ServerName: v.id})
 			}
+
 			sort.Sort(byAddressString(conns)) // Don't replace the same address list in the balancer
+
 			err := clientConn.UpdateState(resolver.State{Addresses: conns})
 			if err != nil {
 				wlog.Error(fmt.Sprintf("[Consul resolver] Couldn't update client connection. error={%v}", err))
+
 				continue
 			}
 		case <-ctx.Done():
 			wlog.Info("[Consul resolver] Watch has been finished")
+
 			return
 		}
 	}

@@ -26,7 +26,7 @@ func initAppResources(contextContext context.Context, configConfig *config.Confi
 	if err != nil {
 		return nil, nil, err
 	}
-	store, cleanup2, err := setupSql(contextContext, logger, configConfig)
+	store, cleanup2, err := setupSQL(contextContext, logger, configConfig)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -52,7 +52,7 @@ func initAppResources(contextContext context.Context, configConfig *config.Confi
 		cleanup()
 		return nil, nil, err
 	}
-	api, cleanup6, err := webrtcApi(logger, configConfig)
+	api, cleanup6, err := webrtcAPI(logger, configConfig)
 	if err != nil {
 		cleanup5()
 		cleanup4()
@@ -115,7 +115,7 @@ func initAppHandlers(contextContext context.Context, cmdResources *resources) (*
 // wire.go:
 
 var wireAppResourceSet = wire.NewSet(
-	log, grpcSrv, setupCluster, setupSql, webrtcApi, authManager, storageClient,
+	log, grpcSrv, setupCluster, setupSQL, webrtcAPI, authManager, storageClient,
 )
 
 var wireAppHandlersSet = wire.NewSet(store.NewSessionStore, store.NewFileJobStore, service.NewTempFileService, service.NewUploader, service.NewTranscoding, wire.Bind(new(service.FileJobStore), new(*store.FileJobStore)), service.NewWebRtcRecorder, wire.Bind(new(service.SessionStore), new(*store.SessionStore)), handler.NewWebRTCRecorder, wire.Bind(new(handler.WebRTCRecorderService), new(*service.WebRtcRecorder)))

@@ -5,7 +5,9 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/google/wire"
+
 	"github.com/webitel/webrtc_recorder/config"
 	"github.com/webitel/webrtc_recorder/internal/handler"
 	"github.com/webitel/webrtc_recorder/internal/service"
@@ -13,7 +15,7 @@ import (
 )
 
 var wireAppResourceSet = wire.NewSet(
-	log, grpcSrv, setupCluster, setupSql, webrtcApi, authManager, storageClient,
+	log, grpcSrv, setupCluster, setupSQL, webrtcAPI, authManager, storageClient,
 )
 
 var wireAppHandlersSet = wire.NewSet(

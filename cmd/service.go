@@ -3,14 +3,17 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/urfave/cli/v2"
-	"github.com/webitel/webrtc_recorder/config"
-	"github.com/webitel/wlog"
-	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/webitel/wlog"
+
+	"github.com/webitel/webrtc_recorder/config"
 )
 
 type App struct {
@@ -29,7 +32,6 @@ func NewApp(cfg *config.Config, ctx context.Context) *App {
 }
 
 func (a *App) Run() (func(), error) {
-
 	r, shutdown, err := initAppResources(a.ctx, a.cfg)
 	if err != nil {
 		return nil, err
@@ -44,6 +46,7 @@ func (a *App) Run() (func(), error) {
 
 	a.eg.Go(func() error {
 		a.log.Info(fmt.Sprintf("listen grpc %s:%d", r.grpcSrv.Host(), r.grpcSrv.Port()))
+
 		return r.grpcSrv.Listen()
 	})
 
@@ -71,10 +74,12 @@ func apiCmd(cfg *config.Config) *cli.Command {
 			}()
 			if err != nil {
 				wlog.Error(err.Error(), wlog.Err(err))
+
 				return err
 			}
 			signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			<-interruptChan
+
 			return nil
 		},
 	}
@@ -87,7 +92,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			Category:    "server",
 			Usage:       "service id ",
 			Value:       "1",
-			Destination: &cfg.Service.Id,
+			Destination: &cfg.Service.ID,
 			Aliases:     []string{"i"},
 			EnvVars:     []string{"ID"},
 		},
@@ -115,7 +120,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			Usage:       "Postgres connection string",
 			EnvVars:     []string{"DATA_SOURCE"},
 			Value:       "postgres://postgres:postgres@localhost:5432/webitel?sslmode=disable",
-			Destination: &cfg.SqlSettings.DSN,
+			Destination: &cfg.SQLSettings.DSN,
 		},
 
 		&cli.StringSliceFlag{
@@ -126,7 +131,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			EnvVars:     []string{"WEBRTC_CODECS"},
 			Destination: &cfg.Rtc.Codecs,
 		},
-		//&cli.StringSliceFlag{
+		// &cli.StringSliceFlag{
 		//	Name:        "webrtc-network",
 		//	Category:    "webrtc",
 		//	Usage:       "webrtc support network (tcp, tcp)",

@@ -5,17 +5,18 @@ import (
 )
 
 type File struct {
-	DomainId   int    `json:"domain_id"`
+	DomainID   int    `json:"domain_id"`
 	UploadedBy int    `json:"uploaded_by"`
 	CreatedAt  int    `json:"created_at"`
 	MimeType   string `json:"mime_type"`
 	Name       string `json:"name"`
-	Uuid       string `json:"uuid"`
+	UUID       string `json:"uuid"`
 	Path       string `json:"path"`
 	Channel    int    `json:"channel"`
 }
 
-func (f *File) Json() []byte {
+func (f *File) JSON() []byte {
 	js, _ := json.Marshal(f)
+
 	return js
 }

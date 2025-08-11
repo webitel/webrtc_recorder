@@ -2,18 +2,22 @@ package webrtc
 
 import (
 	"fmt"
-	"github.com/pion/interceptor"
-	"github.com/pion/interceptor/pkg/intervalpli"
-	"github.com/pion/webrtc/v4"
-	"github.com/webitel/wlog"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/pion/interceptor"
+	"github.com/pion/interceptor/pkg/intervalpli"
+	"github.com/pion/webrtc/v4"
+
+	"github.com/webitel/wlog"
 )
 
-type SessionDescription = webrtc.SessionDescription
-type ICEServer = webrtc.ICEServer
-type PeerConnection = webrtc.PeerConnection
+type (
+	SessionDescription = webrtc.SessionDescription
+	ICEServer          = webrtc.ICEServer
+	PeerConnection     = webrtc.PeerConnection
+)
 
 type API interface {
 	NewPeerConnection(configuration webrtc.Configuration) (*webrtc.PeerConnection, error)
@@ -36,8 +40,9 @@ type Settings struct {
 	EphemeralUDPPortRange *PortRange
 }
 
-func NewApi(log *wlog.Logger, cfg *Settings) API {
+func NewAPI(log *wlog.Logger, cfg *Settings) API {
 	var err error
+
 	mediaEngine := &webrtc.MediaEngine{}
 
 	s := webrtc.SettingEngine{}
@@ -48,7 +53,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 	}
 
 	// TODO DisableActiveTCP ?
-	//s.DisableActiveTCP(false)
+	// s.DisableActiveTCP(false)
 	s.SetIPFilter(func(ip net.IP) bool {
 		return ip.To4() != nil
 	})
@@ -58,6 +63,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 		if err != nil {
 			panic(err.Error())
 		}
+
 		log.Debug(fmt.Sprintf("set udp port range: %v/%v", cfg.EphemeralUDPPortRange.Min, cfg.EphemeralUDPPortRange.Max))
 	}
 
@@ -85,6 +91,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 		}, typeCodec); err != nil {
 			panic(err)
 		}
+
 		log.Debug(fmt.Sprintf("register codec: %s (PayloadType=%d)", v, payloadType))
 		payloadType--
 	}
@@ -99,6 +106,7 @@ func NewApi(log *wlog.Logger, cfg *Settings) API {
 	if err != nil {
 		panic(err)
 	}
+
 	registry.Add(intervalPliFactory)
 
 	// Use the default set of Interceptors

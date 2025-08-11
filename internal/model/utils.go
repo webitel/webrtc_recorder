@@ -1,15 +1,17 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-func NewId() string {
+func NewID() string {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
+
 	return id.String()
 }
 

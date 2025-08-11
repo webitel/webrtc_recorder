@@ -23,7 +23,7 @@ package resolver
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"sync/atomic"
 
 	"google.golang.org/grpc/balancer"
@@ -49,24 +49,28 @@ type rrPickerBuilder struct{}
 
 func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 	logger.Infof("roundrobinPicker: Build called with info: %v", info)
+
 	if len(info.ReadySCs) == 0 {
 		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	}
+
 	scs := make([]balancer.SubConn, 0, len(info.ReadySCs))
-	subIdIndex := make(map[string]balancer.SubConn)
+	subIDIndex := make(map[string]balancer.SubConn)
+
 	for sc, inf := range info.ReadySCs {
 		scs = append(scs, sc)
 		if inf.Address.ServerName != "" {
-			subIdIndex[inf.Address.ServerName] = sc
+			subIDIndex[inf.Address.ServerName] = sc
 		}
 	}
+
 	return &rrPicker{
 		subConns:   scs,
-		subIdIndex: subIdIndex,
+		subIDIndex: subIDIndex,
 		// Start at a random index, as the same RR balancer rebuilds a new
 		// picker when SubConn states change, and we don't want to apply excess
 		// load to the first server in the list.
-		next: uint32(rand.Intn(len(scs))),
+		next: uint32(rand.IntN(len(scs))),
 	}
 }
 
@@ -75,7 +79,7 @@ type rrPicker struct {
 	// created. The slice is immutable. Each Get() will do a round robin
 	// selection from it and return the selected SubConn.
 	subConns   []balancer.SubConn
-	subIdIndex map[string]balancer.SubConn
+	subIDIndex map[string]balancer.SubConn
 
 	next uint32
 }
@@ -84,14 +88,15 @@ type StaticHost struct {
 	Name string
 }
 
-var StaticHostKey struct{}
+type StaticHostKey struct{}
 
 func (p *rrPicker) Pick(r balancer.PickInfo) (balancer.PickResult, error) {
-	v := r.Ctx.Value(StaticHostKey)
+	v := r.Ctx.Value(StaticHostKey{})
 	if v != nil {
-		if sc, ok := p.subIdIndex[v.(StaticHost).Name]; ok {
+		if sc, ok := p.subIDIndex[v.(StaticHost).Name]; ok {
 			return balancer.PickResult{SubConn: sc}, nil
 		}
+
 		return balancer.PickResult{}, errors.New("no such host")
 	}
 
@@ -99,5 +104,6 @@ func (p *rrPicker) Pick(r balancer.PickInfo) (balancer.PickResult, error) {
 	nextIndex := atomic.AddUint32(&p.next, 1)
 
 	sc := p.subConns[nextIndex%subConnsLen]
+
 	return balancer.PickResult{SubConn: sc}, nil
 }

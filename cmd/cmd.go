@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"github.com/urfave/cli/v2"
-	"github.com/webitel/webrtc_recorder/config"
 	"os"
 	"time"
+
+	"github.com/urfave/cli/v2"
+
+	"github.com/webitel/webrtc_recorder/config"
 )
 
 func Run() error {
@@ -36,7 +38,7 @@ func Run() error {
 				Usage:       "application log json",
 				Value:       false,
 				EnvVars:     []string{"LOG_JSON"},
-				Destination: &cfg.Log.Json,
+				Destination: &cfg.Log.JSON,
 			},
 			&cli.BoolFlag{
 				Name:        "log-otel",
@@ -64,7 +66,6 @@ func Run() error {
 			},
 		},
 	}
-
 	if err := def.Run(os.Args); err != nil {
 		return err
 	}
