@@ -31,8 +31,9 @@ type Transcoding struct {
 }
 
 type transcodingJob struct {
-	svc *Transcoding
 	*baseJob
+
+	svc *Transcoding
 }
 
 func NewTranscoding(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, tmp *TempFileService, upl *Uploader) *Transcoding {

@@ -27,11 +27,12 @@ const (
 var ErrUnauthenticated = status.Error(codes.Unauthenticated, "Unauthenticated")
 
 type Server struct {
-	Addr string
-	host string
-	port int
-	log  *wlog.Logger
 	*grpc.Server
+
+	Addr     string
+	host     string
+	port     int
+	log      *wlog.Logger
 	listener net.Listener
 	auth     auth.Manager
 }

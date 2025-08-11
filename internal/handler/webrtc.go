@@ -19,9 +19,10 @@ type WebRTCRecorderService interface {
 }
 
 type WebRTCRecorder struct {
+	webrtc_recorder.UnimplementedWebRTCServiceServer
+
 	log *wlog.Logger
 	svc WebRTCRecorderService
-	webrtc_recorder.UnimplementedWebRTCServiceServer
 }
 
 func NewWebRTCRecorder(svc WebRTCRecorderService, s *grpc_srv.Server, l *wlog.Logger) *WebRTCRecorder {
