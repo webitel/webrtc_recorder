@@ -59,6 +59,8 @@ func TranscodingByPath(src, dst string) error {
 		"-c:v", "libx264",
 		"-tune", "animation",
 		"-preset", "fast",
+		"-movflags",
+		"+faststart",
 		"-f", "mp4",
 		dst,
 	}

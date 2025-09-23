@@ -131,7 +131,7 @@ func (j *UploadJob) Execute() {
 				CreatedAt:         int64(j.job.File.CreatedAt),
 				StreamResponse:    false,
 				Channel:           spb.UploadFileChannel(j.job.File.Channel),
-				GenerateThumbnail: false,
+				GenerateThumbnail: true,
 				UploadedBy:        int64(j.job.File.UploadedBy),
 			},
 		},
