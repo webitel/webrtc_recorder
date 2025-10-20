@@ -12,9 +12,9 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/jpillora/backoff v1.0.0
 	github.com/pion/interceptor v0.1.40
-	github.com/pion/rtp v1.8.21
+	github.com/pion/rtp v1.8.24
 	github.com/pion/webrtc/v4 v4.1.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.38.0
 	github.com/urfave/cli/v2 v2.27.7
