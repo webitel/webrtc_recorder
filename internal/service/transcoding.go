@@ -125,7 +125,6 @@ func (j *transcodingJob) Execute() {
 	mp4File := *j.job.File
 	mp4File.Path = ""
 	mp4File.MimeType = "video/mp4" // TODO
-	mp4File.Name += ".mp4"
 
 	now := time.Now()
 
