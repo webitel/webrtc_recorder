@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
@@ -12,6 +10,7 @@ import (
 	"github.com/pion/webrtc/v4/pkg/media/h264writer"
 	"github.com/pion/webrtc/v4/pkg/media/ivfwriter"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
+	"io"
 
 	"github.com/webitel/wlog"
 
@@ -61,6 +60,7 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 	)
 
 	s.log.Debug(fmt.Sprintf("got %s track, saving as %s", codec.MimeType, s.file.Name))
+	s.file.StartTime = model.GetMillis()
 
 	defer func() {
 		s.log.Debug("closing writer")

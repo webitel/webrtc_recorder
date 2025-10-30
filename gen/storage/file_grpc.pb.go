@@ -19,18 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	FileService_UploadFile_FullMethodName             = "/storage.FileService/UploadFile"
-	FileService_SafeUploadFile_FullMethodName         = "/storage.FileService/SafeUploadFile"
-	FileService_DownloadFile_FullMethodName           = "/storage.FileService/DownloadFile"
-	FileService_UploadFileUrl_FullMethodName          = "/storage.FileService/UploadFileUrl"
-	FileService_GenerateFileLink_FullMethodName       = "/storage.FileService/GenerateFileLink"
-	FileService_BulkGenerateFileLink_FullMethodName   = "/storage.FileService/BulkGenerateFileLink"
-	FileService_DeleteFiles_FullMethodName            = "/storage.FileService/DeleteFiles"
-	FileService_SearchFiles_FullMethodName            = "/storage.FileService/SearchFiles"
-	FileService_UploadP2PVideo_FullMethodName         = "/storage.FileService/UploadP2PVideo"
-	FileService_StopP2PVideo_FullMethodName           = "/storage.FileService/StopP2PVideo"
-	FileService_RenegotiateP2PVideo_FullMethodName    = "/storage.FileService/RenegotiateP2PVideo"
-	FileService_SearchScreenRecordings_FullMethodName = "/storage.FileService/SearchScreenRecordings"
+	FileService_UploadFile_FullMethodName                    = "/storage.FileService/UploadFile"
+	FileService_SafeUploadFile_FullMethodName                = "/storage.FileService/SafeUploadFile"
+	FileService_DownloadFile_FullMethodName                  = "/storage.FileService/DownloadFile"
+	FileService_UploadFileUrl_FullMethodName                 = "/storage.FileService/UploadFileUrl"
+	FileService_GenerateFileLink_FullMethodName              = "/storage.FileService/GenerateFileLink"
+	FileService_BulkGenerateFileLink_FullMethodName          = "/storage.FileService/BulkGenerateFileLink"
+	FileService_DeleteFiles_FullMethodName                   = "/storage.FileService/DeleteFiles"
+	FileService_RestoreFiles_FullMethodName                  = "/storage.FileService/RestoreFiles"
+	FileService_DeleteQuarantineFiles_FullMethodName         = "/storage.FileService/DeleteQuarantineFiles"
+	FileService_SearchFiles_FullMethodName                   = "/storage.FileService/SearchFiles"
+	FileService_SearchScreenRecordings_FullMethodName        = "/storage.FileService/SearchScreenRecordings"
+	FileService_SearchScreenRecordingsByAgent_FullMethodName = "/storage.FileService/SearchScreenRecordingsByAgent"
+	FileService_DeleteScreenRecordings_FullMethodName        = "/storage.FileService/DeleteScreenRecordings"
+	FileService_DeleteScreenRecordingsByAgent_FullMethodName = "/storage.FileService/DeleteScreenRecordingsByAgent"
 )
 
 // FileServiceClient is the client API for FileService service.
@@ -44,11 +46,13 @@ type FileServiceClient interface {
 	GenerateFileLink(ctx context.Context, in *GenerateFileLinkRequest, opts ...grpc.CallOption) (*GenerateFileLinkResponse, error)
 	BulkGenerateFileLink(ctx context.Context, in *BulkGenerateFileLinkRequest, opts ...grpc.CallOption) (*BulkGenerateFileLinkResponse, error)
 	DeleteFiles(ctx context.Context, in *DeleteFilesRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error)
+	RestoreFiles(ctx context.Context, in *RestoreFilesRequest, opts ...grpc.CallOption) (*RestoreFilesResponse, error)
+	DeleteQuarantineFiles(ctx context.Context, in *DeleteQuarantineFilesRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error)
 	SearchFiles(ctx context.Context, in *SearchFilesRequest, opts ...grpc.CallOption) (*ListFile, error)
-	UploadP2PVideo(ctx context.Context, in *UploadP2PVideoRequest, opts ...grpc.CallOption) (*UploadP2PVideoResponse, error)
-	StopP2PVideo(ctx context.Context, in *StopP2PVideoRequest, opts ...grpc.CallOption) (*StopP2PVideoResponse, error)
-	RenegotiateP2PVideo(ctx context.Context, in *RenegotiateP2PVideoRequest, opts ...grpc.CallOption) (*RenegotiateP2PVideoResponse, error)
 	SearchScreenRecordings(ctx context.Context, in *SearchScreenRecordingsRequest, opts ...grpc.CallOption) (*ListFile, error)
+	SearchScreenRecordingsByAgent(ctx context.Context, in *SearchScreenRecordingsByAgentRequest, opts ...grpc.CallOption) (*ListFile, error)
+	DeleteScreenRecordings(ctx context.Context, in *DeleteScreenRecordingsRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error)
+	DeleteScreenRecordingsByAgent(ctx context.Context, in *DeleteScreenRecordingsByAgentRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error)
 }
 
 type fileServiceClient struct {
@@ -192,6 +196,24 @@ func (c *fileServiceClient) DeleteFiles(ctx context.Context, in *DeleteFilesRequ
 	return out, nil
 }
 
+func (c *fileServiceClient) RestoreFiles(ctx context.Context, in *RestoreFilesRequest, opts ...grpc.CallOption) (*RestoreFilesResponse, error) {
+	out := new(RestoreFilesResponse)
+	err := c.cc.Invoke(ctx, FileService_RestoreFiles_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileServiceClient) DeleteQuarantineFiles(ctx context.Context, in *DeleteQuarantineFilesRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error) {
+	out := new(DeleteFilesResponse)
+	err := c.cc.Invoke(ctx, FileService_DeleteQuarantineFiles_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *fileServiceClient) SearchFiles(ctx context.Context, in *SearchFilesRequest, opts ...grpc.CallOption) (*ListFile, error) {
 	out := new(ListFile)
 	err := c.cc.Invoke(ctx, FileService_SearchFiles_FullMethodName, in, out, opts...)
@@ -201,36 +223,36 @@ func (c *fileServiceClient) SearchFiles(ctx context.Context, in *SearchFilesRequ
 	return out, nil
 }
 
-func (c *fileServiceClient) UploadP2PVideo(ctx context.Context, in *UploadP2PVideoRequest, opts ...grpc.CallOption) (*UploadP2PVideoResponse, error) {
-	out := new(UploadP2PVideoResponse)
-	err := c.cc.Invoke(ctx, FileService_UploadP2PVideo_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *fileServiceClient) StopP2PVideo(ctx context.Context, in *StopP2PVideoRequest, opts ...grpc.CallOption) (*StopP2PVideoResponse, error) {
-	out := new(StopP2PVideoResponse)
-	err := c.cc.Invoke(ctx, FileService_StopP2PVideo_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *fileServiceClient) RenegotiateP2PVideo(ctx context.Context, in *RenegotiateP2PVideoRequest, opts ...grpc.CallOption) (*RenegotiateP2PVideoResponse, error) {
-	out := new(RenegotiateP2PVideoResponse)
-	err := c.cc.Invoke(ctx, FileService_RenegotiateP2PVideo_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *fileServiceClient) SearchScreenRecordings(ctx context.Context, in *SearchScreenRecordingsRequest, opts ...grpc.CallOption) (*ListFile, error) {
 	out := new(ListFile)
 	err := c.cc.Invoke(ctx, FileService_SearchScreenRecordings_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileServiceClient) SearchScreenRecordingsByAgent(ctx context.Context, in *SearchScreenRecordingsByAgentRequest, opts ...grpc.CallOption) (*ListFile, error) {
+	out := new(ListFile)
+	err := c.cc.Invoke(ctx, FileService_SearchScreenRecordingsByAgent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileServiceClient) DeleteScreenRecordings(ctx context.Context, in *DeleteScreenRecordingsRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error) {
+	out := new(DeleteFilesResponse)
+	err := c.cc.Invoke(ctx, FileService_DeleteScreenRecordings_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileServiceClient) DeleteScreenRecordingsByAgent(ctx context.Context, in *DeleteScreenRecordingsByAgentRequest, opts ...grpc.CallOption) (*DeleteFilesResponse, error) {
+	out := new(DeleteFilesResponse)
+	err := c.cc.Invoke(ctx, FileService_DeleteScreenRecordingsByAgent_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -248,11 +270,13 @@ type FileServiceServer interface {
 	GenerateFileLink(context.Context, *GenerateFileLinkRequest) (*GenerateFileLinkResponse, error)
 	BulkGenerateFileLink(context.Context, *BulkGenerateFileLinkRequest) (*BulkGenerateFileLinkResponse, error)
 	DeleteFiles(context.Context, *DeleteFilesRequest) (*DeleteFilesResponse, error)
+	RestoreFiles(context.Context, *RestoreFilesRequest) (*RestoreFilesResponse, error)
+	DeleteQuarantineFiles(context.Context, *DeleteQuarantineFilesRequest) (*DeleteFilesResponse, error)
 	SearchFiles(context.Context, *SearchFilesRequest) (*ListFile, error)
-	UploadP2PVideo(context.Context, *UploadP2PVideoRequest) (*UploadP2PVideoResponse, error)
-	StopP2PVideo(context.Context, *StopP2PVideoRequest) (*StopP2PVideoResponse, error)
-	RenegotiateP2PVideo(context.Context, *RenegotiateP2PVideoRequest) (*RenegotiateP2PVideoResponse, error)
 	SearchScreenRecordings(context.Context, *SearchScreenRecordingsRequest) (*ListFile, error)
+	SearchScreenRecordingsByAgent(context.Context, *SearchScreenRecordingsByAgentRequest) (*ListFile, error)
+	DeleteScreenRecordings(context.Context, *DeleteScreenRecordingsRequest) (*DeleteFilesResponse, error)
+	DeleteScreenRecordingsByAgent(context.Context, *DeleteScreenRecordingsByAgentRequest) (*DeleteFilesResponse, error)
 	mustEmbedUnimplementedFileServiceServer()
 }
 
@@ -281,20 +305,26 @@ func (UnimplementedFileServiceServer) BulkGenerateFileLink(context.Context, *Bul
 func (UnimplementedFileServiceServer) DeleteFiles(context.Context, *DeleteFilesRequest) (*DeleteFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFiles not implemented")
 }
+func (UnimplementedFileServiceServer) RestoreFiles(context.Context, *RestoreFilesRequest) (*RestoreFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreFiles not implemented")
+}
+func (UnimplementedFileServiceServer) DeleteQuarantineFiles(context.Context, *DeleteQuarantineFilesRequest) (*DeleteFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteQuarantineFiles not implemented")
+}
 func (UnimplementedFileServiceServer) SearchFiles(context.Context, *SearchFilesRequest) (*ListFile, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchFiles not implemented")
 }
-func (UnimplementedFileServiceServer) UploadP2PVideo(context.Context, *UploadP2PVideoRequest) (*UploadP2PVideoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadP2PVideo not implemented")
-}
-func (UnimplementedFileServiceServer) StopP2PVideo(context.Context, *StopP2PVideoRequest) (*StopP2PVideoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StopP2PVideo not implemented")
-}
-func (UnimplementedFileServiceServer) RenegotiateP2PVideo(context.Context, *RenegotiateP2PVideoRequest) (*RenegotiateP2PVideoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenegotiateP2PVideo not implemented")
-}
 func (UnimplementedFileServiceServer) SearchScreenRecordings(context.Context, *SearchScreenRecordingsRequest) (*ListFile, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchScreenRecordings not implemented")
+}
+func (UnimplementedFileServiceServer) SearchScreenRecordingsByAgent(context.Context, *SearchScreenRecordingsByAgentRequest) (*ListFile, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchScreenRecordingsByAgent not implemented")
+}
+func (UnimplementedFileServiceServer) DeleteScreenRecordings(context.Context, *DeleteScreenRecordingsRequest) (*DeleteFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteScreenRecordings not implemented")
+}
+func (UnimplementedFileServiceServer) DeleteScreenRecordingsByAgent(context.Context, *DeleteScreenRecordingsByAgentRequest) (*DeleteFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteScreenRecordingsByAgent not implemented")
 }
 func (UnimplementedFileServiceServer) mustEmbedUnimplementedFileServiceServer() {}
 
@@ -454,6 +484,42 @@ func _FileService_DeleteFiles_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FileService_RestoreFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServiceServer).RestoreFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileService_RestoreFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServiceServer).RestoreFiles(ctx, req.(*RestoreFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FileService_DeleteQuarantineFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteQuarantineFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServiceServer).DeleteQuarantineFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileService_DeleteQuarantineFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServiceServer).DeleteQuarantineFiles(ctx, req.(*DeleteQuarantineFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _FileService_SearchFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchFilesRequest)
 	if err := dec(in); err != nil {
@@ -472,60 +538,6 @@ func _FileService_SearchFiles_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileService_UploadP2PVideo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadP2PVideoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileServiceServer).UploadP2PVideo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: FileService_UploadP2PVideo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServiceServer).UploadP2PVideo(ctx, req.(*UploadP2PVideoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _FileService_StopP2PVideo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StopP2PVideoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileServiceServer).StopP2PVideo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: FileService_StopP2PVideo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServiceServer).StopP2PVideo(ctx, req.(*StopP2PVideoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _FileService_RenegotiateP2PVideo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenegotiateP2PVideoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileServiceServer).RenegotiateP2PVideo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: FileService_RenegotiateP2PVideo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServiceServer).RenegotiateP2PVideo(ctx, req.(*RenegotiateP2PVideoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _FileService_SearchScreenRecordings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchScreenRecordingsRequest)
 	if err := dec(in); err != nil {
@@ -540,6 +552,60 @@ func _FileService_SearchScreenRecordings_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FileServiceServer).SearchScreenRecordings(ctx, req.(*SearchScreenRecordingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FileService_SearchScreenRecordingsByAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchScreenRecordingsByAgentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServiceServer).SearchScreenRecordingsByAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileService_SearchScreenRecordingsByAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServiceServer).SearchScreenRecordingsByAgent(ctx, req.(*SearchScreenRecordingsByAgentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FileService_DeleteScreenRecordings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteScreenRecordingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServiceServer).DeleteScreenRecordings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileService_DeleteScreenRecordings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServiceServer).DeleteScreenRecordings(ctx, req.(*DeleteScreenRecordingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FileService_DeleteScreenRecordingsByAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteScreenRecordingsByAgentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServiceServer).DeleteScreenRecordingsByAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileService_DeleteScreenRecordingsByAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServiceServer).DeleteScreenRecordingsByAgent(ctx, req.(*DeleteScreenRecordingsByAgentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -568,24 +634,32 @@ var FileService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _FileService_DeleteFiles_Handler,
 		},
 		{
+			MethodName: "RestoreFiles",
+			Handler:    _FileService_RestoreFiles_Handler,
+		},
+		{
+			MethodName: "DeleteQuarantineFiles",
+			Handler:    _FileService_DeleteQuarantineFiles_Handler,
+		},
+		{
 			MethodName: "SearchFiles",
 			Handler:    _FileService_SearchFiles_Handler,
 		},
 		{
-			MethodName: "UploadP2PVideo",
-			Handler:    _FileService_UploadP2PVideo_Handler,
-		},
-		{
-			MethodName: "StopP2PVideo",
-			Handler:    _FileService_StopP2PVideo_Handler,
-		},
-		{
-			MethodName: "RenegotiateP2PVideo",
-			Handler:    _FileService_RenegotiateP2PVideo_Handler,
-		},
-		{
 			MethodName: "SearchScreenRecordings",
 			Handler:    _FileService_SearchScreenRecordings_Handler,
+		},
+		{
+			MethodName: "SearchScreenRecordingsByAgent",
+			Handler:    _FileService_SearchScreenRecordingsByAgent_Handler,
+		},
+		{
+			MethodName: "DeleteScreenRecordings",
+			Handler:    _FileService_DeleteScreenRecordings_Handler,
+		},
+		{
+			MethodName: "DeleteScreenRecordingsByAgent",
+			Handler:    _FileService_DeleteScreenRecordingsByAgent_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -118,6 +118,10 @@ func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadVideoSession) {
 		return
 	}
 
+	if s.file.StartTime > 0 {
+		s.file.EndTime = model.GetMillis()
+	}
+
 	err := svc.transcoding.CreateJob(s.file)
 	if err != nil {
 		s.log.Error(err.Error(), wlog.Err(err))

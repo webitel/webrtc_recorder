@@ -121,6 +121,14 @@ func (j *UploadJob) Execute() {
 		return
 	}
 
+	var cp *spb.CustomFileProperties
+	if j.job.File.StartTime > 0 {
+		cp = &spb.CustomFileProperties{
+			StartTime: int64(j.job.File.StartTime),
+			EndTime:   int64(j.job.File.EndTime),
+		}
+	}
+
 	err = stream.Send(&spb.UploadFileRequest{
 		Data: &spb.UploadFileRequest_Metadata_{
 			Metadata: &spb.UploadFileRequest_Metadata{
@@ -133,6 +141,7 @@ func (j *UploadJob) Execute() {
 				Channel:           spb.UploadFileChannel(j.job.File.Channel),
 				GenerateThumbnail: true,
 				UploadedBy:        int64(j.job.File.UploadedBy),
+				Properties:        cp,
 			},
 		},
 	})

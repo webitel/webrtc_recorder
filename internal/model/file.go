@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 )
 
+//-f avfoundation -framerate 15  -i "1:none" -f avfoundation -filter_complex "[0:v]scale=1280:720[v0];[1:v]scale=1280:720[v1];[v0][v1] hstack=inputs=2" -c:v libx264 -y ./1.mp4
+
 type File struct {
 	DomainID   int    `json:"domain_id"`
 	UploadedBy int    `json:"uploaded_by"`
@@ -13,6 +15,8 @@ type File struct {
 	UUID       string `json:"uuid"`
 	Path       string `json:"path"`
 	Channel    int    `json:"channel"`
+	StartTime  int    `json:"start_time"`
+	EndTime    int    `json:"end_time"`
 }
 
 func (f *File) JSON() []byte {
