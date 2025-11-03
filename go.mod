@@ -9,7 +9,7 @@ require (
 	github.com/google/wire v0.7.0
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/jackc/pgx/v5 v5.7.5
+	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jpillora/backoff v1.0.0
 	github.com/pion/interceptor v0.1.41
 	github.com/pion/rtp v1.8.25
