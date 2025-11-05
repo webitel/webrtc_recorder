@@ -141,8 +141,8 @@ func (j *transcodingJob) Execute() {
 	if err != nil {
 		return
 	}
+	err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path)
 
-	err = utils.TranscodingByPath(j.job.File.Path, mp4File.Path)
 	if err != nil {
 		return
 	}
