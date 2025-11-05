@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/pion/webrtc/v4"
 
@@ -41,7 +40,6 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 	var (
 		peerConnection *webrtc.PeerConnection
 		err            error
-		writer         io.WriteCloser
 	)
 
 	config := webrtc.Configuration{
@@ -59,12 +57,7 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 
 	writeFile := &file
 
-	writer, err = svc.temp.NewWriter(writeFile, "raw")
-	if err != nil {
-		return nil, err
-	}
-
-	session := NewWebRtcUploadSession(svc, peerConnection, writeFile, writer)
+	session := NewWebRtcUploadSession(svc, peerConnection, writeFile)
 
 	err = session.negotiate(sdpOffer)
 	if err != nil {
@@ -118,15 +111,15 @@ func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadVideoSession) {
 		return
 	}
 
-	if s.file.StartTime > 0 {
-		s.file.EndTime = model.GetMillis()
+	if s.fileConfig.StartTime > 0 {
+		s.fileConfig.EndTime = model.GetMillis()
 	}
 
-	err := svc.transcoding.CreateJob(s.file)
+	err := svc.transcoding.CreateJob(s.fileConfig)
 	if err != nil {
 		s.log.Error(err.Error(), wlog.Err(err))
 
-		err = svc.temp.DeleteFile(s.file)
+		err = svc.temp.DeleteFile(s.fileConfig)
 		if err != nil {
 			s.log.Error(err.Error(), wlog.Err(err))
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/pion/webrtc/v4/pkg/media/h264writer"
 	"github.com/pion/webrtc/v4/pkg/media/ivfwriter"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
+	"go.uber.org/atomic"
 	"io"
 
 	"github.com/webitel/wlog"
@@ -17,31 +18,37 @@ import (
 	"github.com/webitel/webrtc_recorder/internal/model"
 )
 
-type RtcUploadVideoSession struct {
-	id       string
-	answer   *webrtc.SessionDescription
-	offer    webrtc.SessionDescription
-	pc       *webrtc.PeerConnection
-	log      *wlog.Logger
-	file     *model.File
-	cancel   context.CancelFunc
-	ctx      context.Context
-	rec      *WebRtcRecorder
-	encoder  media.Writer
+type Track struct {
+	model.File
 	countPkg int
-
-	writer io.WriteCloser
+	writer   io.WriteCloser `json:"-"`
+	encoder  media.Writer   `json:"-"`
 }
 
-func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file *model.File, w io.WriteCloser) *RtcUploadVideoSession {
+type RtcUploadVideoSession struct {
+	id         string
+	answer     *webrtc.SessionDescription
+	offer      webrtc.SessionDescription
+	pc         *webrtc.PeerConnection
+	log        *wlog.Logger
+	fileConfig *model.File
+	cancel     context.CancelFunc
+	ctx        context.Context
+	rec        *WebRtcRecorder
+	track      []*Track
+	tmp        *TempFileService
+	countTrack atomic.Int32
+}
+
+func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file *model.File) *RtcUploadVideoSession {
 	id := model.NewID()
 	session := &RtcUploadVideoSession{
-		id:     id,
-		file:   file,
-		rec:    rec,
-		pc:     pc,
-		writer: w,
-		log:    rec.log.With(wlog.String("session", id)),
+		id:         id,
+		fileConfig: file,
+		rec:        rec,
+		pc:         pc,
+		log:        rec.log.With(wlog.String("session", id)),
+		track:      make([]*Track, 0, 2),
 	}
 
 	session.ctx, session.cancel = context.WithCancel(context.Background())
@@ -53,26 +60,45 @@ func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file
 
 func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 	codec := track.Codec()
+	t := Track{
+		File:    *s.fileConfig,
+		writer:  nil,
+		encoder: nil,
+	}
 
 	var (
 		err error
 		pkt rtp.Depacketizer
 	)
 
-	s.log.Debug(fmt.Sprintf("got %s track, saving as %s", codec.MimeType, s.file.Name))
-	s.file.StartTime = model.GetMillis()
+	t.writer, err = s.rec.temp.NewWriter(&t.File, "raw")
+	if err != nil {
+		// TODO
+		s.log.Error(err.Error(), wlog.Err(err))
+		return
+	}
+	s.track = append(s.track, &t)
+	s.fileConfig.Track = append(s.fileConfig.Track, t.Path)
+
+	s.log.Debug(fmt.Sprintf("got %s: %s track, saving as %s", track.ID(), codec.MimeType, s.fileConfig.Name))
+	if s.fileConfig.StartTime == 0 {
+		s.fileConfig.StartTime = model.GetMillis()
+	}
+
+	s.countTrack.Add(1)
 
 	defer func() {
+		s.countTrack.Add(-1)
 		s.log.Debug("closing writer")
 		s.close()
 	}()
 
 	switch codec.MimeType {
 	case webrtc.MimeTypeVP9:
-		s.file.MimeType = codec.MimeType
+		t.MimeType = codec.MimeType
 		pkt = &codecs.VP9Packet{}
 
-		s.encoder, err = ivfwriter.NewWith(s.writer, ivfwriter.WithCodec(codec.MimeType))
+		t.encoder, err = ivfwriter.NewWith(t.writer, ivfwriter.WithCodec(codec.MimeType))
 		if err != nil {
 			s.log.Error(fmt.Sprintf("failed to open ivf file: %s", err))
 
@@ -80,12 +106,14 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 		}
 
 	case webrtc.MimeTypeH264:
-		s.file.MimeType = codec.MimeType
+		t.MimeType = codec.MimeType
 		pkt = &codecs.H264Packet{}
-		s.encoder = h264writer.NewWith(s.writer)
+		t.encoder = h264writer.NewWith(t.writer)
+	default:
+		return // TODO
 	}
 
-	if s.encoder != nil {
+	if t.encoder != nil {
 		var (
 			rtpPacket *rtp.Packet
 			sample    *media.Sample
@@ -104,7 +132,7 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 				}
 
 				lsn = pkt.SequenceNumber
-				if err = s.encoder.WriteRTP(pkt); err != nil {
+				if err = t.encoder.WriteRTP(pkt); err != nil {
 					s.log.Error(fmt.Sprintf("failed to write rtp packet: %s", err))
 					s.cancel()
 				}
@@ -127,10 +155,10 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 					return
 				}
 
-				s.countPkg++
+				t.countPkg++
 
-				if s.countPkg%1000 == 0 {
-					s.log.Debug(fmt.Sprintf("receive rtc packet count %d", s.countPkg))
+				if t.countPkg%1000 == 0 {
+					s.log.Debug(fmt.Sprintf("receive rtc (%s) packet count %d", track.ID(), t.countPkg))
 				}
 
 				builder.Push(rtpPacket)
@@ -152,6 +180,7 @@ func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrt
 
 	switch connectionState { //nolint:exhaustive
 	case webrtc.ICEConnectionStateFailed:
+		s.countTrack.Store(0) // TODO
 		s.close()
 	default:
 
@@ -159,22 +188,30 @@ func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrt
 }
 
 func (s *RtcUploadVideoSession) close() {
-	s.cancel()
-
-	if s.encoder != nil {
-		if closeErr := s.encoder.Close(); closeErr != nil {
-			s.log.Error(fmt.Sprintf("closing encoder: %s", closeErr.Error()))
-		}
-
-		s.encoder = nil
+	s.log.Debug("close")
+	if s.countTrack.Load() != 0 {
+		s.log.Debug("wait close track")
+		return
 	}
 
-	if s.writer != nil {
-		if closeErr := s.writer.Close(); closeErr != nil {
-			s.log.Error(fmt.Sprintf("closing writer: %s", closeErr.Error()))
+	s.cancel()
+
+	for _, track := range s.track {
+		if track.encoder != nil {
+			if closeErr := track.encoder.Close(); closeErr != nil {
+				s.log.Error(fmt.Sprintf("closing encoder: %s", closeErr.Error()))
+			}
+
+			track.encoder = nil
 		}
 
-		s.writer = nil
+		if track.writer != nil {
+			if closeErr := track.writer.Close(); closeErr != nil {
+				s.log.Error(fmt.Sprintf("closing writer: %s", closeErr.Error()))
+			}
+
+			track.writer = nil
+		}
 	}
 
 	// Gracefully shutdown the peer connection

@@ -34,11 +34,19 @@ func NewTempFileService(cfg *config.Config) *TempFileService {
 }
 
 func (svc *TempFileService) DeleteFile(file *model.File) error {
-	if file.Path == "" {
+	if len(file.Track) == 0 {
 		return errors.New("file path is empty")
 	}
+	var err error
+	for _, f := range file.Track {
+		err = os.Remove(f)
+	}
 
-	return os.Remove(file.Path)
+	if file.Path != "" {
+		err = os.Remove(file.Path)
+	}
+
+	return err
 }
 
 func (svc *TempFileService) NewReader(file model.File) (io.ReadCloser, error) {
