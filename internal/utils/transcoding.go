@@ -127,6 +127,7 @@ func transcodingArgs(src []string) ([]string, []string) {
 func TranscodingByPath(src []string, dst string) error {
 	args := []string{
 		"-nostdin",
+		"-threads", "1",
 	}
 	inputArgs, finalArgs := transcodingArgs(src)
 	args = append(args, inputArgs...)
