@@ -9,6 +9,7 @@ import (
 	"github.com/pion/webrtc/v4/pkg/media"
 	"github.com/pion/webrtc/v4/pkg/media/h264writer"
 	"github.com/pion/webrtc/v4/pkg/media/ivfwriter"
+	"github.com/pion/webrtc/v4/pkg/media/oggwriter"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
 	"go.uber.org/atomic"
 	"io"
@@ -25,7 +26,7 @@ type Track struct {
 	encoder  media.Writer   `json:"-"`
 }
 
-type RtcUploadVideoSession struct {
+type RtcUploadMediaSession struct {
 	id         string
 	answer     *webrtc.SessionDescription
 	offer      webrtc.SessionDescription
@@ -40,9 +41,9 @@ type RtcUploadVideoSession struct {
 	countTrack atomic.Int32
 }
 
-func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file *model.File) *RtcUploadVideoSession {
+func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file *model.File) *RtcUploadMediaSession {
 	id := model.NewID()
-	session := &RtcUploadVideoSession{
+	session := &RtcUploadMediaSession{
 		id:         id,
 		fileConfig: file,
 		rec:        rec,
@@ -58,7 +59,7 @@ func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file
 	return session
 }
 
-func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
+func (s *RtcUploadMediaSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 	codec := track.Codec()
 	t := Track{
 		File:    *s.fileConfig,
@@ -78,9 +79,12 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 		return
 	}
 	s.track = append(s.track, &t)
-	s.fileConfig.Track = append(s.fileConfig.Track, t.Path)
+	s.fileConfig.Track = append(s.fileConfig.Track, model.MediaChannel{
+		Path:     t.Path,
+		MimeType: codec.MimeType,
+	})
 
-	s.log.Debug(fmt.Sprintf("got %s: %s track, saving as %s", track.ID(), codec.MimeType, s.fileConfig.Name))
+	s.log.Debug(fmt.Sprintf("got %s: %s track, saving as %s", track.ID(), codec.MimeType, t.Path))
 	if s.fileConfig.StartTime == 0 {
 		s.fileConfig.StartTime = model.GetMillis()
 	}
@@ -109,7 +113,13 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 		t.MimeType = codec.MimeType
 		pkt = &codecs.H264Packet{}
 		t.encoder = h264writer.NewWith(t.writer)
+	case webrtc.MimeTypeOpus:
+		t.MimeType = codec.MimeType
+		pkt = &codecs.OpusPacket{}
+		t.encoder, _ = oggwriter.NewWith(t.writer, codec.ClockRate, codec.Channels)
+
 	default:
+		s.log.Error(fmt.Sprintf("unsupported codec: %s", codec.MimeType))
 		return // TODO
 	}
 
@@ -175,7 +185,7 @@ func (s *RtcUploadVideoSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 	}
 }
 
-func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrtc.ICEConnectionState) {
+func (s *RtcUploadMediaSession) onICEConnectionStateChange(connectionState webrtc.ICEConnectionState) {
 	s.log.Debug(fmt.Sprintf("connection state has changed to %s", connectionState.String()))
 
 	switch connectionState { //nolint:exhaustive
@@ -187,7 +197,7 @@ func (s *RtcUploadVideoSession) onICEConnectionStateChange(connectionState webrt
 	}
 }
 
-func (s *RtcUploadVideoSession) close() {
+func (s *RtcUploadMediaSession) close() {
 	s.log.Debug("close")
 	if s.countTrack.Load() != 0 {
 		s.log.Debug("wait close track")
@@ -222,7 +232,7 @@ func (s *RtcUploadVideoSession) close() {
 	s.rec.stopVideoSession(s)
 }
 
-func (s *RtcUploadVideoSession) negotiate(sdpOffer string) error {
+func (s *RtcUploadMediaSession) negotiate(sdpOffer string) error {
 	s.offer = webrtc.SessionDescription{
 		Type: webrtc.SDPTypeOffer,
 		SDP:  sdpOffer,
@@ -256,7 +266,7 @@ func (s *RtcUploadVideoSession) negotiate(sdpOffer string) error {
 	return nil
 }
 
-func (s *RtcUploadVideoSession) AnswerSDP() string {
+func (s *RtcUploadMediaSession) AnswerSDP() string {
 	if s.answer != nil {
 		return s.answer.SDP
 	}
@@ -264,6 +274,6 @@ func (s *RtcUploadVideoSession) AnswerSDP() string {
 	return ""
 }
 
-func (s *RtcUploadVideoSession) ID() string {
+func (s *RtcUploadMediaSession) ID() string {
 	return s.id
 }

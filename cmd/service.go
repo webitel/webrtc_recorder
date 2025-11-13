@@ -126,8 +126,8 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 		&cli.StringSliceFlag{
 			Name:        "webrtc-codecs",
 			Category:    "webrtc",
-			Usage:       "webrtc support codecs (video/VP9, video/H264)",
-			Value:       cli.NewStringSlice("video/VP9", "video/H264"),
+			Usage:       "webrtc support codecs (video/VP9, video/H264, audio/opus)",
+			Value:       cli.NewStringSlice("video/VP9", "video/H264", "audio/opus@48000", "audio/opus@16000"),
 			EnvVars:     []string{"WEBRTC_CODECS"},
 			Destination: &cfg.Rtc.Codecs,
 		},

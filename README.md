@@ -101,13 +101,13 @@
 | `--uploader-workers` | `UPLOADER_WORKERS` | Кількість воркерів для завантаження | `10` |
 
 #### **WebRTC**
-| Прапор | Змінна середовища | Опис | Значення за замовчуванням |
-| --- | --- | --- | --- |
-| `--webrtc-codecs` | `WEBRTC_CODECS` | Підтримувані кодеки | `video/VP9`, `video/H264` |
-| `--webrtc-ice-disconnect-timeout` | `WEBRTC_ICE_DISCONNECT_TIMEOUT` | Таймаут роз'єднання ICE | `5s` |
-| `--webrtc-ice-failed-timeout` | `WEBRTC_ICE_FAILED_TIMEOUT` | Таймаут помилки ICE | `15s` |
-| `--webrtc-ice-keepalive-timeout` | `WEBRTC_ICE_KEEPALIVE_TIMEOUT` | Таймаут підтримки з'єднання ICE | `5s` |
-| `--webrtc-udp-port-range` | `WEBRTC_UDP_PORT_RANGE` | Діапазон UDP портів | `10000-20000` |
+| Прапор | Змінна середовища | Опис | Значення за замовчуванням                       |
+| --- | --- | --- |-------------------------------------------------|
+| `--webrtc-codecs` | `WEBRTC_CODECS` | Підтримувані кодеки | `video/VP9`, `video/H264`, `audio/opus@48000`, `audio/opus@16000` |
+| `--webrtc-ice-disconnect-timeout` | `WEBRTC_ICE_DISCONNECT_TIMEOUT` | Таймаут роз'єднання ICE | `5s`                                            |
+| `--webrtc-ice-failed-timeout` | `WEBRTC_ICE_FAILED_TIMEOUT` | Таймаут помилки ICE | `15s`                                           |
+| `--webrtc-ice-keepalive-timeout` | `WEBRTC_ICE_KEEPALIVE_TIMEOUT` | Таймаут підтримки з'єднання ICE | `5s`                                            |
+| `--webrtc-udp-port-range` | `WEBRTC_UDP_PORT_RANGE` | Діапазон UDP портів | `10000-20000`                                   |
 
 ## API
 

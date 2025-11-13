@@ -39,7 +39,7 @@ func (svc *TempFileService) DeleteFile(file *model.File) error {
 	}
 	var err error
 	for _, f := range file.Track {
-		err = os.Remove(f)
+		err = os.Remove(f.Path)
 	}
 
 	if file.Path != "" {
