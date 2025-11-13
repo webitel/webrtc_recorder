@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pion/webrtc/v4"
 
@@ -55,6 +56,18 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 		return nil, err
 	}
 
+	if strings.Index(sdpOffer, "m=video") > -1 {
+		if _, err = peerConnection.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo); err != nil {
+			return nil, err
+		}
+	}
+
+	if strings.Index(sdpOffer, "m=audio") > -1 {
+		if _, err = peerConnection.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
+			return nil, err
+		}
+	}
+
 	writeFile := &file
 
 	session := NewWebRtcUploadSession(svc, peerConnection, writeFile)
@@ -79,7 +92,7 @@ func (svc *WebRtcRecorder) RenegotiateP2P(id, sdpOffer string) (model.RtcUploadV
 		return nil, fmt.Errorf("p2p session with id %s not found", id)
 	}
 
-	sess := session.(*RtcUploadVideoSession)
+	sess := session.(*RtcUploadMediaSession)
 
 	// TODO singleflight
 	err = sess.negotiate(sdpOffer)
@@ -99,12 +112,12 @@ func (svc *WebRtcRecorder) CloseP2P(id string) error {
 	}
 
 	// TODO singleflight
-	session.(*RtcUploadVideoSession).close()
+	session.(*RtcUploadMediaSession).close()
 
 	return nil
 }
 
-func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadVideoSession) {
+func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadMediaSession) {
 	if !svc.sessions.Remove(s.id) {
 		s.log.Debug("closing peer connection")
 

@@ -144,6 +144,7 @@ func (j *transcodingJob) Execute() {
 	err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path)
 
 	if err != nil {
+		_ = j.svc.tempFile.DeleteFile(&mp4File)
 		return
 	}
 }

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/webitel/webrtc_recorder/internal/model"
 	"io"
 	"math"
 	"os"
@@ -54,89 +55,121 @@ func NewTranscoding(src io.ReadCloser, writer io.Writer) (*Transcoding, error) {
 	}, nil
 }
 
-func transcodingArgs(src []string) ([]string, []string) {
-	N := len(src)
-	if N == 0 {
+func transcodingArgs(src []model.MediaChannel) ([]string, []string) {
+	if len(src) == 0 {
 		return nil, nil
 	}
 
-	cols := int(math.Ceil(math.Sqrt(float64(N))))
-	rows := int(math.Ceil(float64(N) / float64(cols)))
+	var videoChannels []int
+	var audioChannels []int
 
-	const finalWidth = 1920
-	const finalHeight = 1080
-
-	windowWidth := finalWidth / cols
-	windowHeight := finalHeight / rows
-
-	var inputArgs []string
-	var filterComplexBuilder strings.Builder
-	var inputStreamsForXstack []string // Список [v_norm_0], [v_norm_1], ...
-
-	for i := 0; i < N; i++ {
-		inputArgs = append(inputArgs, "-i", src[i])
-		streamName := fmt.Sprintf("v_norm_%d", i)
-		filter := fmt.Sprintf(
-			"[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease[v_scaled_%d]; "+
-				"[v_scaled_%d]pad=%d:%d:(ow-iw)/2:(oh-ih)/2[%s]; ",
-			i, windowWidth, windowHeight, i,
-			i, windowWidth, windowHeight, streamName,
-		)
-		filterComplexBuilder.WriteString(filter)
-		inputStreamsForXstack = append(inputStreamsForXstack, fmt.Sprintf("[%s]", streamName))
-	}
-
-	if N == 1 {
-		return inputArgs, nil
-	}
-
-	var layout []string
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
-			index := r*cols + c
-			if index >= N {
-				break
-			}
-
-			posX := c * windowWidth
-			posY := r * windowHeight
-
-			layout = append(layout, fmt.Sprintf("%d_%d", posX, posY))
+	// Розділяємо вхідні потоки на відео та аудіо
+	for i, s := range src {
+		if strings.HasPrefix(s.MimeType, "video") {
+			videoChannels = append(videoChannels, i)
+		} else if strings.HasPrefix(s.MimeType, "audio") {
+			audioChannels = append(audioChannels, i)
 		}
 	}
 
-	inputStreams := strings.Join(inputStreamsForXstack, "")
-	layoutString := strings.Join(layout, "|")
+	videoCount := len(videoChannels)
+	audioCount := len(audioChannels)
 
-	xstackFilter := fmt.Sprintf(
-		"%sxstack=inputs=%d:layout=%s[v_out]",
-		inputStreams, N, layoutString,
-	)
-	filterComplexBuilder.WriteString(xstackFilter)
+	if videoCount == 0 && audioCount == 0 {
+		return nil, nil
+	}
 
-	var finalArgs []string
+	var inputArgs []string
+	var filterComplexBuilder strings.Builder
+	var finalMapArgs []string
 
-	finalArgs = append(finalArgs,
-		"-filter_complex", filterComplexBuilder.String(),
-		"-map", "[v_out]", // Вихідний відеопотік
-	)
+	for i := 0; i < len(src); i++ {
+		inputArgs = append(inputArgs, "-i", src[i].Path)
+	}
+
+	if videoCount > 0 {
+		if videoCount == 1 {
+			filterComplexBuilder.WriteString(fmt.Sprintf("[%d:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[v_out];", videoChannels[0]))
+		} else {
+			cols := int(math.Ceil(math.Sqrt(float64(videoCount))))
+			rows := int(math.Ceil(float64(videoCount) / float64(cols)))
+
+			const finalWidth = 1920
+			const finalHeight = 1080
+
+			windowWidth := finalWidth / cols
+			windowHeight := finalHeight / rows
+
+			var inputStreamsForXstack []string
+			for i, videoIdx := range videoChannels {
+				streamName := fmt.Sprintf("v_norm_%d", i)
+				filter := fmt.Sprintf(
+					"[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease[v_scaled_%d]; "+
+						"[v_scaled_%d]pad=%d:%d:(ow-iw)/2:(oh-ih)/2[%s]; ",
+					videoIdx, windowWidth, windowHeight, i,
+					i, windowWidth, windowHeight, streamName,
+				)
+				filterComplexBuilder.WriteString(filter)
+				inputStreamsForXstack = append(inputStreamsForXstack, fmt.Sprintf("[%s]", streamName))
+			}
+
+			var layout []string
+			for r := 0; r < rows; r++ {
+				for c := 0; c < cols; c++ {
+					index := r*cols + c
+					if index >= videoCount {
+						break
+					}
+					posX := c * windowWidth
+					posY := r * windowHeight
+					layout = append(layout, fmt.Sprintf("%d_%d", posX, posY))
+				}
+			}
+
+			inputStreams := strings.Join(inputStreamsForXstack, "")
+			layoutString := strings.Join(layout, "|")
+
+			xstackFilter := fmt.Sprintf(
+				"%sxstack=inputs=%d:layout=%s[v_out];",
+				inputStreams, videoCount, layoutString,
+			)
+			filterComplexBuilder.WriteString(xstackFilter)
+		}
+		finalMapArgs = append(finalMapArgs, "-map", "[v_out]")
+	}
+
+	if audioCount > 0 {
+		for _, audioIdx := range audioChannels {
+			filterComplexBuilder.WriteString(fmt.Sprintf("[%d:a]", audioIdx))
+		}
+		filterComplexBuilder.WriteString(fmt.Sprintf("amix=inputs=%d[a_out]", audioCount))
+		finalMapArgs = append(finalMapArgs, "-map", "[a_out]")
+	}
+
+	finalFilter := strings.TrimSuffix(filterComplexBuilder.String(), ";")
+	finalArgs := append([]string{"-filter_complex", finalFilter}, finalMapArgs...)
 
 	return inputArgs, finalArgs
 }
 
-func TranscodingByPath(src []string, dst string) error {
+func TranscodingByPath(src []model.MediaChannel, dst string) error {
 	args := []string{
 		"-nostdin",
 		"-threads", "1",
 	}
+
 	inputArgs, finalArgs := transcodingArgs(src)
 	args = append(args, inputArgs...)
 
-	if finalArgs != nil {
-		args = append(args, finalArgs...)
+	if finalArgs == nil {
+		return nil
 	}
+	args = append(args, finalArgs...)
 
 	args = append(args,
+		"-c:a", "aac",
+		"-b:a", "192k",
+
 		"-c:v", "libx264",
 		"-tune", "animation",
 		"-preset", "fast",

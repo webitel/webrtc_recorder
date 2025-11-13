@@ -2,7 +2,9 @@ package webrtc
 
 import (
 	"fmt"
+	"math"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -70,19 +72,30 @@ func NewAPI(log *wlog.Logger, cfg *Settings) API {
 	var payloadType webrtc.PayloadType = 97
 
 	for _, v := range cfg.Codecs {
+		var clRate = uint32(90000)
+
 		var typeCodec webrtc.RTPCodecType
 		if strings.HasPrefix(v, "audio") {
 			typeCodec = webrtc.RTPCodecTypeAudio
+			clRate = 48000
 		} else if strings.HasPrefix(v, "video") {
 			typeCodec = webrtc.RTPCodecTypeVideo
 		} else {
 			panic("unsupported codec")
 		}
 
+		if idx := strings.Index(v, "@"); idx > -1 {
+			tmp, _ := strconv.Atoi(v[idx+1:])
+			if tmp > 0 && tmp <= math.MaxUint32 {
+				clRate = uint32(tmp)
+			}
+			v = v[:idx]
+		}
+
 		if err = mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 			RTPCodecCapability: webrtc.RTPCodecCapability{
 				MimeType:     v,
-				ClockRate:    90000,
+				ClockRate:    clRate,
 				Channels:     0,
 				SDPFmtpLine:  "",
 				RTCPFeedback: nil,
@@ -92,7 +105,7 @@ func NewAPI(log *wlog.Logger, cfg *Settings) API {
 			panic(err)
 		}
 
-		log.Debug(fmt.Sprintf("register codec: %s (PayloadType=%d)", v, payloadType))
+		log.Debug(fmt.Sprintf("register codec: %s (PayloadType=%d, ClockRate=%d)", v, payloadType, clRate))
 		payloadType--
 	}
 
