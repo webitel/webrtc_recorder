@@ -54,9 +54,45 @@ func NewWebRtcUploadSession(rec *WebRtcRecorder, pc *webrtc.PeerConnection, file
 
 	session.ctx, session.cancel = context.WithCancel(context.Background())
 	pc.OnTrack(session.onTrack)
+	pc.OnDataChannel(session.onDataChannel)
 	pc.OnICEConnectionStateChange(session.onICEConnectionStateChange)
 
 	return session
+}
+
+func (s RtcUploadMediaSession) onDataChannel(dataChannel *webrtc.DataChannel) {
+	s.log.Debug(fmt.Sprintf("new DataChannel %s %d", dataChannel.Label(), dataChannel.ID()))
+	t := Track{
+		File:    *s.fileConfig,
+		writer:  nil,
+		encoder: nil,
+	}
+	var err error
+
+	t.writer, err = s.rec.temp.NewWriter(&t.File, "raw")
+	if err != nil {
+		// TODO
+		s.log.Error(err.Error(), wlog.Err(err))
+		return
+	}
+	t.Path = t.File.Path
+
+	s.track = append(s.track, &t)
+	s.fileConfig.Track = append(s.fileConfig.Track, model.MediaChannel{
+		Path:     t.Path,
+		MimeType: dataChannel.Label(),
+	})
+
+	s.countTrack.Add(1)
+
+	dataChannel.OnClose(func() {
+		s.log.Debug(fmt.Sprintf("close DataChannel %s", dataChannel.Label()))
+		s.countTrack.Add(-1)
+	})
+
+	dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
+		t.writer.Write(msg.Data)
+	})
 }
 
 func (s *RtcUploadMediaSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
