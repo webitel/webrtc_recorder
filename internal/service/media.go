@@ -120,7 +120,7 @@ func (s *RtcUploadMediaSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 		MimeType: codec.MimeType,
 	})
 
-	s.log.Debug(fmt.Sprintf("got %s: %s track, saving as %s", track.ID(), codec.MimeType, t.Path))
+	s.log.Debug(fmt.Sprintf("got %s: %s@%d track, saving as %s", track.ID(), codec.MimeType, codec.ClockRate, t.Path))
 	if s.fileConfig.StartTime == 0 {
 		s.fileConfig.StartTime = model.GetMillis()
 	}
