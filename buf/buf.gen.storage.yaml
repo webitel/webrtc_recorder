@@ -6,6 +6,9 @@ managed:
     - file_option: go_package_prefix
       value: github.com/webitel/webrtc_recorder/gen/engine
       module: buf.build/webitel/engine
+    - file_option: go_package_prefix
+      value: github.com/webitel/webrtc_recorder/gen/storage
+      module: buf.build/webitel/storage
 
 plugins:
   # Base types for Go. Generates message and enum types.

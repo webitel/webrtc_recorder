@@ -61,7 +61,7 @@ func (w *WebRTCRecorder) UploadP2PVideo(ctx context.Context, in *webrtc_recorder
 		DomainID:   int(authUser.DomainID),
 		UploadedBy: int(authUser.UserID),
 		CreatedAt:  model.GetMillis(),
-		Channel:    int(spb.UploadFileChannel_ScreenSharingChannel),
+		Channel:    getChannel(in.GetChannel()),
 	}
 
 	sess, err := w.svc.UploadP2PVideo(in.GetSdpOffer(), file, i)
@@ -93,4 +93,13 @@ func (w *WebRTCRecorder) RenegotiateP2PVideo(ctx context.Context, in *webrtc_rec
 	return &webrtc_recorder.RenegotiateP2PVideoResponse{
 		SdpAnswer: s.AnswerSDP(),
 	}, nil
+}
+
+func getChannel(ch spb.UploadFileChannel) int {
+	switch ch { // TODO allow other
+	case spb.UploadFileChannel_CallChannel:
+		return int(spb.UploadFileChannel_CallChannel)
+	default:
+		return int(spb.UploadFileChannel_ScreenSharingChannel)
+	}
 }
