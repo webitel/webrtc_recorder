@@ -100,6 +100,6 @@ func getChannel(ch spb.UploadFileChannel) int {
 	case spb.UploadFileChannel_CallChannel:
 		return int(spb.UploadFileChannel_CallChannel)
 	default:
-		return int(spb.UploadFileChannel_ScreenSharingChannel)
+		return int(spb.UploadFileChannel_ScreenRecordingChannel)
 	}
 }
