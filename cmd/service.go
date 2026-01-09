@@ -122,7 +122,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			Value:       "postgres://postgres:postgres@localhost:5432/webitel?sslmode=disable",
 			Destination: &cfg.SQLSettings.DSN,
 		},
-
+		// vp8
 		&cli.StringSliceFlag{
 			Name:        "webrtc-codecs",
 			Category:    "webrtc",
