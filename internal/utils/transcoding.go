@@ -1,14 +1,19 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/webitel/webrtc_recorder/internal/model"
 	"io"
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
+	"time"
 )
+
+var timeRegex = regexp.MustCompile(`time=([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+)`)
 
 type Transcoding struct {
 	scale  string
@@ -152,7 +157,7 @@ func transcodingArgs(src []model.MediaChannel) ([]string, []string) {
 	return inputArgs, finalArgs
 }
 
-func TranscodingByPath(src []model.MediaChannel, dst string) error {
+func TranscodingByPath(src []model.MediaChannel, dst string) (int, error) {
 	args := []string{
 		"-nostdin",
 		"-threads", "1",
@@ -162,7 +167,7 @@ func TranscodingByPath(src []model.MediaChannel, dst string) error {
 	args = append(args, inputArgs...)
 
 	if finalArgs == nil {
-		return nil
+		return 0, nil
 	}
 	args = append(args, finalArgs...)
 
@@ -180,12 +185,22 @@ func TranscodingByPath(src []model.MediaChannel, dst string) error {
 
 	cmd := exec.Command("ffmpeg", args...)
 	//cmd.Stderr = os.Stderr // bind log stream to stderr
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	err := cmd.Start()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return cmd.Wait()
+	err = cmd.Wait()
+	if err != nil {
+		return 0, fmt.Errorf("ffmpeg error: %w, trace: %s", err, stderr.String())
+	}
+	durationMs := parseDurationFromFFmpeg(stderr.String())
+
+	return durationMs, nil
 }
 
 func (t *Transcoding) Start() error {
@@ -210,4 +225,24 @@ func (t *Transcoding) Close() (err error) {
 	}
 
 	return nil
+}
+
+// parseDurationFromFFmpeg шукає останнє входження time= у виводі ffmpeg
+func parseDurationFromFFmpeg(output string) int {
+	matches := timeRegex.FindAllStringSubmatch(output, -1)
+	if len(matches) == 0 {
+		return 0
+	}
+
+	lastMatch := matches[len(matches)-1][1]
+
+	parts := strings.Split(lastMatch, ":")
+	if len(parts) == 3 {
+		durationStr := fmt.Sprintf("%sh%sm%ss", parts[0], parts[1], parts[2])
+		d, err := time.ParseDuration(durationStr)
+		if err == nil {
+			return int(d.Milliseconds())
+		}
+	}
+	return 0
 }
