@@ -1,6 +1,6 @@
 module github.com/webitel/webrtc_recorder
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/georgysavva/scany/v2 v2.1.4
@@ -20,7 +20,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/webitel/wlog v0.0.0-20250325101442-de4f125c1ec7
 	go.uber.org/atomic v1.11.0
-	golang.org/x/sync v0.16.0
+	golang.org/x/sync v0.20.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250804133106-a7a43d27e69b
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
