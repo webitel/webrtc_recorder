@@ -33,6 +33,8 @@ func NewTempFileService(cfg *config.Config) *TempFileService {
 	}
 }
 
+func (svc *TempFileService) Dir() string { return svc.dir }
+
 func (svc *TempFileService) DeleteFile(file *model.File) error {
 	if len(file.Track) == 0 {
 		return errors.New("file path is empty")

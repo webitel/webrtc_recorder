@@ -141,8 +141,9 @@ func (j *transcodingJob) Execute() {
 	if err != nil {
 		return
 	}
+	actualDurationMs := j.job.File.EndTime - j.job.File.StartTime
 	var durationMs int
-	durationMs, err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path)
+	durationMs, err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path, actualDurationMs)
 
 	if err != nil {
 		_ = j.svc.tempFile.DeleteFile(&mp4File)
