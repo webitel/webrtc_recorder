@@ -21,8 +21,10 @@ type File struct {
 }
 
 type MediaChannel struct {
-	Path     string `json:"path"`
-	MimeType string `json:"mime_type"`
+	Path       string `json:"path"`
+	MimeType   string `json:"mime_type"`
+	FirstRtpTs uint32 `json:"first_rtp_ts,omitempty"`
+	LastRtpTs  uint32 `json:"last_rtp_ts,omitempty"`
 }
 
 func (f *File) JSON() []byte {

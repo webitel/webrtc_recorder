@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
@@ -12,7 +15,6 @@ import (
 	"github.com/pion/webrtc/v4/pkg/media/oggwriter"
 	"github.com/pion/webrtc/v4/pkg/media/samplebuilder"
 	"go.uber.org/atomic"
-	"io"
 
 	"github.com/webitel/wlog"
 
@@ -164,20 +166,29 @@ func (s *RtcUploadMediaSession) onTrack(track *webrtc.TrackRemote, _ *webrtc.RTP
 			rtpPacket *rtp.Packet
 			sample    *media.Sample
 			lsn       uint16 = 0
+			isVideo          = strings.HasPrefix(codec.MimeType, "video")
 		)
+
+		trackIdx := len(s.fileConfig.Track) - 1
 
 		builder := samplebuilder.New(45, pkt, codec.ClockRate,
 			samplebuilder.WithRTPHeaders(true),
 			samplebuilder.WithPacketReleaseHandler(func(pkt *rtp.Packet) {
-				// if debugRtp {
-				//s.log.Debug(fmt.Sprintf("rtp ts=%d seq=%d", pkt.Timestamp, pkt.SequenceNumber))
-				//}
 				if lsn != 0 && pkt.SequenceNumber != lsn+1 {
 					s.log.Error(fmt.Sprintf("lost packets packet seq=%d, last=%d, count=%d", pkt.SequenceNumber,
 						lsn, pkt.SequenceNumber-(lsn+1)))
 				}
 
 				lsn = pkt.SequenceNumber
+
+				if isVideo && trackIdx < len(s.fileConfig.Track) {
+					ch := &s.fileConfig.Track[trackIdx]
+					if ch.FirstRtpTs == 0 {
+						ch.FirstRtpTs = pkt.Timestamp
+					}
+					ch.LastRtpTs = pkt.Timestamp
+				}
+
 				if err = t.encoder.WriteRTP(pkt); err != nil {
 					s.log.Error(fmt.Sprintf("failed to write rtp packet: %s", err))
 					s.cancel()
