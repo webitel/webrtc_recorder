@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 Restart=always
-EnvironmentFile=/etc/default/webitel-webrtc-rec.env
+EnvironmentFile=/etc/default/webitel-webrtc-rec
 TimeoutStartSec=0
 ExecStart=/usr/local/bin/webitel-webrtc-rec server
 
