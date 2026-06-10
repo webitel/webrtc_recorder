@@ -59,7 +59,7 @@ jobs:
       package-description: ${{ github.event.repository.description }}
       package-contents: |
         src=deploy/systemd/webitel-webrtc-rec.service dst=/etc/systemd/system/webitel-webrtc-rec.service type=config
-        src=.env.example dst=/etc/default/webitel-webrtc-rec.env type=config
+        src=.env.example dst=/etc/default/webitel-webrtc-rec type=config
         
 
       package-depends: ffmpeg
