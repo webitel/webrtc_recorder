@@ -9,6 +9,7 @@ Type=simple
 User=webitel
 Group=webitel
 LogsDirectory=webitel
+CacheDirectory=webitel-webrtc-rec
 
 EnvironmentFile=/etc/default/webitel-webrtc-rec
 EnvironmentFile=-/etc/default/webitel-otel
@@ -35,7 +36,6 @@ PrivateTmp=yes
 NoExecPaths=/
 ExecPaths=/usr/local/bin/webitel-webrtc-rec
 ExecPaths=/usr/bin/ffmpeg
-ReadWritePaths=/var/lib/webitel/webrtc-temp
 
 # Process isolation
 PrivateDevices=yes
