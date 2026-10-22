@@ -1,10 +1,10 @@
 module github.com/webitel/webrtc_recorder
 
-go 1.24.0
+go 1.26
 
 require (
 	github.com/georgysavva/scany/v2 v2.1.4
-	github.com/go-playground/form/v4 v4.2.1
+	github.com/go-playground/form/v4 v4.5.0
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.7.0
 	github.com/hashicorp/consul/api v1.32.1
