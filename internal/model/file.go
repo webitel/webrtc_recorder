@@ -2,7 +2,12 @@ package model
 
 import (
 	"encoding/json"
+	"strings"
 )
+
+// DiagnosticNamePrefix marks a test session from the connection diagnostic page:
+// media is received and measured as usual, but the recording is discarded.
+const DiagnosticNamePrefix = "webrtc-diag-"
 
 //-f avfoundation -framerate 15  -i "1:none" -f avfoundation -filter_complex "[0:v]scale=1280:720[v0];[1:v]scale=1280:720[v1];[v0][v1] hstack=inputs=2" -c:v libx264 -y ./1.mp4
 
@@ -25,6 +30,10 @@ type MediaChannel struct {
 	MimeType   string `json:"mime_type"`
 	FirstRtpTs uint32 `json:"first_rtp_ts,omitempty"`
 	LastRtpTs  uint32 `json:"last_rtp_ts,omitempty"`
+}
+
+func (f *File) IsDiagnostic() bool {
+	return strings.HasPrefix(f.Name, DiagnosticNamePrefix)
 }
 
 func (f *File) JSON() []byte {
