@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/webitel/wlog"
 
@@ -18,11 +18,12 @@ var ErrSessionNotFound = errors.New("session not found in cache")
 
 type SessionStore struct {
 	log  *wlog.Logger
-	sess *simplelru.LRU[string, model.RtcUploadVideoSession]
+	sess *lru.Cache[string, model.RtcUploadVideoSession]
 }
 
 func NewSessionStore(log *wlog.Logger) *SessionStore {
-	sess, err := simplelru.NewLRU[string, model.RtcUploadVideoSession](cacheClientsSize, nil)
+	// lru.Cache is safe for concurrent use, sessions are added/removed from different goroutines
+	sess, err := lru.New[string, model.RtcUploadVideoSession](cacheClientsSize)
 	if err != nil { // size < 0
 		panic(err.Error())
 	}
