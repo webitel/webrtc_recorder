@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebRTC Recorder Check</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #5f6b7a; --border: #dde2e8;
+  --accent: #2463eb; --ok: #1a7f37; --warn: #b26b00; --fail: #c62828; --info: #5f6b7a;
+  --ok-bg: #e6f4ea; --warn-bg: #fff4e0; --fail-bg: #fdecea; --info-bg: #eef1f5;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111418; --card: #1a1f25; --text: #e6e9ed; --muted: #95a1af; --border: #2c333c;
+    --accent: #6d9bff; --ok: #4cc06a; --warn: #f0a83a; --fail: #ff6b6b; --info: #95a1af;
+    --ok-bg: #16301f; --warn-bg: #352710; --fail-bg: #3a1a1a; --info-bg: #232a32;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111418; --card: #1a1f25; --text: #e6e9ed; --muted: #95a1af; --border: #2c333c;
+  --accent: #6d9bff; --ok: #4cc06a; --warn: #f0a83a; --fail: #ff6b6b; --info: #95a1af;
+  --ok-bg: #16301f; --warn-bg: #352710; --fail-bg: #3a1a1a; --info-bg: #232a32;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 0 0 12px; }
+.sub { color: var(--muted); margin: 0 0 20px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+input, select, textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+textarea { font-family: var(--mono); font-size: 12px; min-height: 64px; resize: vertical; }
+.full { grid-column: 1 / -1; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+button { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); font: inherit; cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; cursor: default; }
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.steps li:last-child { border-bottom: 0; }
+.steps .name { min-width: 170px; font-weight: 500; }
+.steps .detail { color: var(--muted); font-size: 13px; word-break: break-word; }
+.pill { display: inline-block; min-width: 54px; text-align: center; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--info-bg); color: var(--info); text-transform: uppercase; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.fail { background: var(--fail-bg); color: var(--fail); }
+.pill.run { background: var(--info-bg); color: var(--accent); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.tile .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.tile .v { font-size: 18px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; word-break: break-word; }
+.tile .v.small { font-size: 13px; font-weight: 500; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-top: 12px; }
+.chart { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.chart .k { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.chart canvas { width: 100%; height: 70px; display: block; }
+#verdict { display: none; }
+#verdict .head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+#verdict .head .pill { font-size: 13px; padding: 4px 12px; }
+#verdict ul { margin: 0; padding-left: 18px; }
+#log { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 12px; max-height: 260px; overflow: auto; }
+#log li { padding: 2px 0; }
+#log li.warn { color: var(--warn); }
+#log li.fail { color: var(--fail); }
+#log li.ok { color: var(--ok); }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-family: system-ui, sans-serif; }
+tr.selected td { color: var(--ok); font-weight: 600; }
+tr.dead td { color: var(--fail); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+h3 { font-size: 13px; margin: 0 0 6px; color: var(--muted); font-weight: 500; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>WebRTC recorder: connection check</h1>
+  <p class="sub">Checks the path from this workstation to the screen recording service, the same way the recorder client does, and measures the connection quality. Test recordings are discarded by the server.</p>
+
+  <section class="card">
+    <h2>Settings</h2>
+    <div class="grid">
+      <div>
+        <label for="base">Webitel URL</label>
+        <input id="base" placeholder="https://webitel.example.com">
+      </div>
+      <div>
+        <label for="token">Access token (X-Webitel-Access)</label>
+        <input id="token" type="password" autocomplete="off">
+      </div>
+      <div>
+        <label for="source">Video source</label>
+        <select id="source">
+          <option value="synthetic">Synthetic (1280×720, animated)</option>
+          <option value="screen">Real screen share</option>
+        </select>
+      </div>
+      <div>
+        <label for="duration">Duration</label>
+        <select id="duration">
+          <option value="30">30 seconds</option>
+          <option value="60" selected>1 minute</option>
+          <option value="300">5 minutes</option>
+          <option value="1800">30 minutes</option>
+          <option value="0">Until stopped (monitoring)</option>
+        </select>
+      </div>
+      <div>
+        <label for="policy">ICE path</label>
+        <select id="policy">
+          <option value="all">Any (as the real client)</option>
+          <option value="relay">Force TURN relay</option>
+        </select>
+      </div>
+      <div class="full">
+        <label for="ice">ICE servers (JSON, same as the client config)</label>
+        <textarea id="ice" spellcheck="false" placeholder='[{"urls": ["turn:turn.example.com:3478"], "username": "user", "credential": "secret"}]'></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="start" class="primary">Start check</button>
+      <button id="stop" disabled>Stop</button>
+      <button id="copy" disabled>Copy report</button>
+      <button id="download" disabled>Download report</button>
+    </div>
+    <div class="hint">The page must be opened from the Webitel host (same origin as the API), otherwise the browser blocks the request.</div>
+  </section>
+
+  <section class="card" id="verdict">
+    <div class="head"><span class="pill" id="verdict-pill"></span><strong id="verdict-title"></strong></div>
+    <ul id="verdict-list"></ul>
+  </section>
+
+  <section class="card">
+    <h2>Steps</h2>
+    <ul class="steps" id="steps">
+      <li data-step="support"><span class="pill">wait</span><span class="name">Browser support</span><span class="detail"></span></li>
+      <li data-step="gather"><span class="pill">wait</span><span class="name">STUN / TURN servers</span><span class="detail"></span></li>
+      <li data-step="signal"><span class="pill">wait</span><span class="name">Recorder API</span><span class="detail"></span></li>
+      <li data-step="ice"><span class="pill">wait</span><span class="name">ICE connection</span><span class="detail"></span></li>
+      <li data-step="media"><span class="pill">wait</span><span class="name">Media flow</span><span class="detail"></span></li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Live metrics</h2>
+    <div class="tiles">
+      <div class="tile"><div class="k">Path</div><div class="v small" id="m-path">–</div></div>
+      <div class="tile"><div class="k">RTT</div><div class="v" id="m-rtt">–</div></div>
+      <div class="tile"><div class="k">Bitrate</div><div class="v" id="m-bitrate">–</div></div>
+      <div class="tile"><div class="k">Packet loss</div><div class="v" id="m-loss">–</div></div>
+      <div class="tile"><div class="k">Retransmits</div><div class="v" id="m-retrans">–</div></div>
+      <div class="tile"><div class="k">NACK / PLI</div><div class="v" id="m-nack">–</div></div>
+      <div class="tile"><div class="k">Video</div><div class="v small" id="m-video">–</div></div>
+      <div class="tile"><div class="k">Limited by</div><div class="v small" id="m-ql">–</div></div>
+      <div class="tile"><div class="k">ICE state</div><div class="v small" id="m-ice">–</div></div>
+      <div class="tile"><div class="k">Elapsed</div><div class="v" id="m-elapsed">–</div></div>
+      <div class="tile"><div class="k">Session id</div><div class="v small" id="m-session">–</div></div>
+      <div class="tile"><div class="k">Codec / encoder</div><div class="v small" id="m-codec">–</div></div>
+      <div class="tile"><div class="k">DTLS / SRTP</div><div class="v small" id="m-dtls">–</div></div>
+    </div>
+    <div class="charts">
+      <div class="chart"><div class="k">Bitrate, kbps</div><canvas id="c-bitrate"></canvas></div>
+      <div class="chart"><div class="k">RTT, ms</div><canvas id="c-rtt"></canvas></div>
+      <div class="chart"><div class="k">Loss per interval, %</div><canvas id="c-loss"></canvas></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Timeline</h2>
+    <div class="tablewrap"><table><thead><tr><th>+ms</th><th>Stage</th><th>Detail</th></tr></thead><tbody id="timeline"></tbody></table></div>
+  </section>
+
+  <section class="card">
+    <h2>ICE candidates</h2>
+    <div class="two">
+      <div>
+        <h3>This workstation (offer)</h3>
+        <div class="tablewrap"><table><thead><tr><th>+ms</th><th>Type</th><th>Proto</th><th>Address</th><th>Via</th></tr></thead><tbody id="cand-local"></tbody></table></div>
+      </div>
+      <div>
+        <h3>Recorder (answer)</h3>
+        <div class="tablewrap"><table><thead><tr><th>Type</th><th>Proto</th><th>Address</th></tr></thead><tbody id="cand-remote"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Candidate pairs</h2>
+    <div class="tablewrap"><table><thead><tr><th>Local</th><th>Remote</th><th>State</th><th>Req sent</th><th>Resp recv</th><th>RTT</th></tr></thead><tbody id="pairs"></tbody></table></div>
+    <div class="hint">Green: pair carrying media. Red: connectivity checks were sent but never answered (path blocked, or abandoned after another pair won).</div>
+  </section>
+
+  <section class="card">
+    <h2>Environment</h2>
+    <div class="tablewrap"><table><tbody id="env"></tbody></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Events</h2>
+    <ul id="log"></ul>
+  </section>
+</main>
+
+<script>
+'use strict';
+
+const DIAG_PREFIX = 'webrtc-diag-'; // must match model.DiagnosticNamePrefix on the server
+const POLL_MS = 1000;
+const GATHER_TIMEOUT_MS = 10000;
+const MEDIA_TIMEOUT_S = 10;
+const WARMUP_S = 15;
+const LOW_BANDWIDTH_KBPS = 1000; // below this bandwidth limitation really degrades a 720p screen recording // bandwidth estimator ramp-up, excluded from quality limitation check
+
+const $ = (id) => document.getElementById(id);
+
+const store = {
+  get(area, key) { try { return window[area].getItem(key); } catch (e) { return null; } },
+  set(area, key, val) { try { window[area].setItem(key, val); } catch (e) { /* storage unavailable */ } },
+};
+
+let run = null;
+
+function newRun() {
+  return {
+    startedAt: new Date().toISOString(),
+    finished: false,
+    pc: null,
+    stream: null,
+    drawTimer: null,
+    pollTimer: null,
+    sessionId: null,
+    apiError: null,
+    connectedEver: false,
+    disconnects: 0,
+    lastPath: null,
+    gather: [],
+    tStart: performance.now(),
+    gatherStart: 0,
+    gatherMs: null,
+    apiMs: null,
+    marks: [],
+    localCands: [],
+    remoteCands: [],
+    iceErrors: [],
+    pairs: [],
+    env: collectEnv(),
+    codec: null,
+    transport: null,
+    firstMedia: false,
+    firstRR: false,
+    samples: [],
+    events: [],
+    verdict: null,
+    t0: 0,
+  };
+}
+
+// ---------- UI helpers ----------
+
+function log(level, msg) {
+  const t = new Date();
+  if (run) run.events.push({ t: t.toISOString(), level, msg });
+  const li = document.createElement('li');
+  li.className = level;
+  li.textContent = `${t.toLocaleTimeString()}  ${msg}`;
+  $('log').prepend(li);
+}
+
+function setStep(key, status, detail) {
+  const li = document.querySelector(`[data-step="${key}"]`);
+  const pill = li.querySelector('.pill');
+  pill.className = 'pill ' + (status === 'wait' ? '' : status);
+  pill.textContent = { ok: 'ok', warn: 'warn', fail: 'fail', run: '…', wait: 'wait', skip: 'skip' }[status] || status;
+  if (detail !== undefined) li.querySelector('.detail').textContent = detail;
+}
+
+function setTile(id, text) { $(id).textContent = text; }
+
+function fillTable(id, rows, rowClass) {
+  const tb = $(id);
+  tb.innerHTML = '';
+  rows.forEach((cells, i) => {
+    const tr = document.createElement('tr');
+    if (rowClass) tr.className = rowClass(i) || '';
+    cells.forEach((c) => {
+      const td = document.createElement('td');
+      td.textContent = c == null ? '–' : String(c);
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+}
+
+function mark(name, detail) {
+  if (!run) return;
+  run.marks.push({ ms: Math.round(performance.now() - run.tStart), name, detail: detail || '' });
+  fillTable('timeline', run.marks.map((m) => [m.ms, m.name, m.detail]));
+}
+
+function collectEnv() {
+  const c = navigator.connection;
+  return {
+    userAgent: navigator.userAgent,
+    platform: (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform,
+    cpuCores: navigator.hardwareConcurrency,
+    memoryGb: navigator.deviceMemory,
+    screen: `${screen.width}×${screen.height} @${window.devicePixelRatio}x`,
+    network: c ? `${c.type || '?'} / ${c.effectiveType || '?'}, ~${c.downlink ?? '?'} Mbps, ~${c.rtt ?? '?'} ms` : null,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    origin: location.origin,
+    secureContext: window.isSecureContext,
+  };
+}
+
+function renderEnv() {
+  fillTable('env', Object.entries(run.env).map(([k, v]) => [k, v]));
+}
+
+function parseSdpCandidates(sdp) {
+  return sdp.split(/\r?\n/).filter((l) => l.startsWith('a=candidate:')).map((l) => {
+    const f = l.substring(12).split(' ');
+    return { protocol: f[2].toLowerCase(), address: f[4], port: f[5], type: f[7] };
+  });
+}
+
+function fmtCand(c) {
+  if (!c) return '?';
+  return `${c.candidateType} ${c.protocol} ${c.address || c.ip || '?'}:${c.port}${c.relayProtocol ? ' (' + c.relayProtocol + ')' : ''}`;
+}
+
+function resetUI() {
+  document.querySelectorAll('[data-step]').forEach((li) => setStep(li.dataset.step, 'wait', ''));
+  ['m-path', 'm-rtt', 'm-bitrate', 'm-loss', 'm-retrans', 'm-nack', 'm-video', 'm-ql', 'm-ice', 'm-elapsed', 'm-session', 'm-codec', 'm-dtls']
+    .forEach((id) => setTile(id, '–'));
+  $('log').innerHTML = '';
+  ['timeline', 'cand-local', 'cand-remote', 'pairs', 'env'].forEach((id) => { $(id).innerHTML = ''; });
+  $('verdict').style.display = 'none';
+  ['c-bitrate', 'c-rtt', 'c-loss'].forEach((id) => drawChart(id, []));
+}
+
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function drawChart(id, values) {
+  const c = $(id);
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  c.width = w * dpr; c.height = h * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  const pts = values.slice(-300);
+  if (pts.length < 2) return;
+  const max = Math.max(1e-9, ...pts.filter((v) => v != null));
+  ctx.strokeStyle = cssVar('--accent');
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  pts.forEach((v, i) => {
+    const x = (i / (pts.length - 1)) * w;
+    const y = h - 12 - ((v || 0) / max) * (h - 16);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = cssVar('--muted');
+  ctx.font = '10px system-ui';
+  ctx.fillText(`max ${fmt(max)}`, 2, h - 1);
+}
+
+function fmt(v, digits = 1) {
+  if (v == null || Number.isNaN(v)) return '–';
+  return Math.abs(v) >= 100 ? Math.round(v).toString() : v.toFixed(digits);
+}
+
+// ---------- settings ----------
+
+function loadSettings() {
+  $('base').value = store.get('localStorage', 'diag.base') || location.origin;
+  $('ice').value = store.get('localStorage', 'diag.ice') || '';
+  $('source').value = store.get('localStorage', 'diag.source') || 'synthetic';
+  $('duration').value = store.get('localStorage', 'diag.duration') || '60';
+  $('policy').value = store.get('localStorage', 'diag.policy') || 'all';
+  $('token').value = store.get('sessionStorage', 'diag.token') || '';
+}
+
+function saveSettings() {
+  store.set('localStorage', 'diag.base', $('base').value.trim());
+  store.set('localStorage', 'diag.ice', $('ice').value);
+  store.set('localStorage', 'diag.source', $('source').value);
+  store.set('localStorage', 'diag.duration', $('duration').value);
+  store.set('localStorage', 'diag.policy', $('policy').value);
+  store.set('sessionStorage', 'diag.token', $('token').value);
+}
+
+function parseIceServers() {
+  const raw = $('ice').value.trim();
+  if (!raw) return [];
+  const v = JSON.parse(raw);
+  return Array.isArray(v) ? v : [v];
+}
+
+function maskedIceServers(servers) {
+  return servers.map((s) => ({ ...s, credential: s.credential ? '***' : undefined }));
+}
+
+// ---------- WebRTC helpers ----------
+
+function waitGathering(pc, timeoutMs) {
+  return new Promise((resolve) => {
+    if (pc.iceGatheringState === 'complete') return resolve(true);
+    const timer = setTimeout(() => resolve(false), timeoutMs);
+    pc.addEventListener('icegatheringstatechange', () => {
+      if (pc.iceGatheringState === 'complete') { clearTimeout(timer); resolve(true); }
+    });
+  });
+}
+
+function candidateType(c) {
+  if (c.type) return c.type;
+  const m = / typ (\w+)/.exec(c.candidate);
+  return m ? m[1] : 'unknown';
+}
+
+async function probeIceServer(server) {
+  const urls = [].concat(server.urls || server.url || []);
+  const pc = new RTCPeerConnection({ iceServers: [server] });
+  const res = { urls, candidates: [], errors: [] };
+  pc.onicecandidate = (e) => {
+    if (e.candidate && e.candidate.candidate) {
+      res.candidates.push({ type: candidateType(e.candidate), protocol: e.candidate.protocol, address: e.candidate.address });
+    }
+  };
+  pc.onicecandidateerror = (e) => res.errors.push(`${e.url || ''} ${e.errorCode} ${e.errorText || ''}`.trim());
+  pc.createDataChannel('probe');
+  await pc.setLocalDescription(await pc.createOffer());
+  res.complete = await waitGathering(pc, GATHER_TIMEOUT_MS);
+  pc.close();
+
+  const isTurn = urls.some((u) => /^turns?:/i.test(u));
+  const types = new Set(res.candidates.map((c) => c.type));
+  if (isTurn) {
+    res.status = types.has('relay') ? 'ok' : 'fail';
+    res.summary = types.has('relay') ? 'relay candidate received' : 'no relay candidate (TURN unreachable or wrong credentials)';
+  } else {
+    // STUN on the same LAN returns no srflx when it equals the host address, so only errors matter
+    res.status = res.errors.length ? 'warn' : 'ok';
+    res.summary = types.has('srflx') ? 'srflx candidate received' : 'reachable';
+  }
+  if (res.errors.length) res.summary += `; errors: ${res.errors.join(', ')}`;
+  return res;
+}
+
+function startSynthetic() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280; canvas.height = 720;
+  const ctx = canvas.getContext('2d');
+  let frame = 0;
+  // moving content + noisy block, so the encoder produces bitrate similar to a busy screen
+  run.drawTimer = setInterval(() => {
+    frame++;
+    ctx.fillStyle = `hsl(${(frame * 2) % 360}, 35%, 22%)`;
+    ctx.fillRect(0, 0, 1280, 720);
+    for (let i = 0; i < 12; i++) {
+      ctx.fillStyle = `hsl(${(i * 30 + frame) % 360}, 60%, 55%)`;
+      const x = (frame * (i + 1) * 3) % 1280, y = 40 + i * 55;
+      ctx.fillRect(x, y, 140, 40);
+    }
+    const img = ctx.createImageData(320, 180);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random() * 255;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 900, 500);
+    ctx.fillStyle = '#fff';
+    ctx.font = '48px monospace';
+    ctx.fillText(new Date().toISOString(), 40, 690);
+  }, 1000 / 15);
+  return canvas.captureStream(15);
+}
+
+async function getSourceStream() {
+  if ($('source').value === 'screen') {
+    const s = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 15 }, audio: false });
+    s.getVideoTracks()[0].addEventListener('ended', () => finish('screen sharing stopped'));
+    return s;
+  }
+  return startSynthetic();
+}
+
+// ---------- recorder API ----------
+
+function apiUrl(suffix = '') {
+  return `${$('base').value.trim().replace(/\/+$/, '')}/api/webrtc/video${suffix}`;
+}
+
+async function apiError(resp) {
+  let text = await resp.text();
+  try { const j = JSON.parse(text); text = j.detail || j.message || text; } catch (e) { /* not json */ }
+  return `HTTP ${resp.status}: ${text}`;
+}
+
+// ---------- main flow ----------
+
+async function start() {
+  saveSettings();
+  resetUI();
+  run = newRun();
+  $('start').disabled = true; $('stop').disabled = false;
+  $('copy').disabled = true; $('download').disabled = true;
+
+  // 1. support
+  if (!window.RTCPeerConnection || !HTMLCanvasElement.prototype.captureStream) {
+    setStep('support', 'fail', 'WebRTC is not available in this browser');
+    return finish('unsupported browser');
+  }
+  setStep('support', 'ok', navigator.userAgent);
+  renderEnv();
+  mark('start');
+
+  let iceServers;
+  try {
+    iceServers = parseIceServers();
+  } catch (e) {
+    setStep('gather', 'fail', `invalid ICE servers JSON: ${e.message}`);
+    return finish('invalid settings');
+  }
+
+  // 2. STUN/TURN probe
+  if (!iceServers.length) {
+    setStep('gather', 'skip', 'no ICE servers configured, only direct connection is tested');
+  } else {
+    setStep('gather', 'run', 'gathering candidates…');
+    const results = await Promise.all(iceServers.map(probeIceServer));
+    run.gather = results;
+    mark('STUN/TURN probe done', results.map((r) => `${r.urls[0]}: ${r.status}`).join(', '));
+    const worst = results.some((r) => r.status === 'fail') ? 'fail' : results.some((r) => r.status === 'warn') ? 'warn' : 'ok';
+    setStep('gather', worst, results.map((r) => `${r.urls.join(', ')}: ${r.summary}`).join(' | '));
+    results.forEach((r) => log(r.status === 'ok' ? 'ok' : r.status, `ICE server ${r.urls.join(', ')}: ${r.summary}`));
+    if (worst === 'fail' && $('policy').value === 'relay') return finish('TURN is not available');
+  }
+  if (run.finished) return;
+
+  // 3. signaling
+  try {
+    run.stream = await getSourceStream();
+    mark('video source ready', $('source').value);
+  } catch (e) {
+    setStep('media', 'fail', `cannot get video source: ${e.message}`);
+    return finish('no video source');
+  }
+
+  run.srcWidth = run.stream.getVideoTracks()[0].getSettings().width || 0;
+
+  const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: $('policy').value });
+  run.pc = pc;
+  run.stream.getTracks().forEach((t) => pc.addTrack(t, run.stream));
+
+  pc.oniceconnectionstatechange = () => onIceState(pc.iceConnectionState);
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') mark('DTLS connected');
+    if (pc.connectionState === 'failed') finish('peer connection failed (DTLS)');
+  };
+  pc.onicecandidate = (e) => {
+    if (!e.candidate || !e.candidate.candidate) return;
+    const c = e.candidate;
+    const type = candidateType(c);
+    const ms = Math.round(performance.now() - run.gatherStart);
+    if (!run.localCands.some((x) => x.type === type)) mark(`first ${type} candidate`, `${c.protocol} ${c.address}`);
+    run.localCands.push({ ms, type, protocol: c.protocol, address: `${c.address}:${c.port}`, relayProtocol: c.relayProtocol, url: c.url });
+    fillTable('cand-local', run.localCands.map((x) => [x.ms, x.type, x.protocol, x.address, x.url || (x.relayProtocol ? x.relayProtocol : '')]));
+  };
+  pc.onicecandidateerror = (e) => {
+    const err = `${e.url || ''} ${e.errorCode} ${e.errorText || ''}`.trim();
+    run.iceErrors.push(err);
+    log('warn', `ICE candidate error: ${err}`);
+  };
+
+  setStep('signal', 'run', 'creating offer…');
+  run.gatherStart = performance.now();
+  await pc.setLocalDescription(await pc.createOffer());
+  mark('offer created');
+  const gathered = await waitGathering(pc, GATHER_TIMEOUT_MS);
+  run.gatherMs = Math.round(performance.now() - run.gatherStart);
+  if (gathered) {
+    mark('ICE gathering complete', `${run.gatherMs} ms, ${run.localCands.length} candidates`);
+  } else {
+    mark('ICE gathering timeout', `${run.gatherMs} ms`);
+    log('warn', `ICE gathering not complete after ${GATHER_TIMEOUT_MS / 1000}s, sending what we have`);
+  }
+  if (run.finished) return;
+
+  const body = {
+    sdp_offer: pc.localDescription.sdp,
+    name: DIAG_PREFIX + new Date().toISOString().replace(/[:.]/g, '-'),
+    uuid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+  };
+
+  const t = performance.now();
+  mark('API request sent');
+  let answer;
+  try {
+    const resp = await fetch(apiUrl(), {
+      method: 'POST',
+      headers: { 'X-Webitel-Access': $('token').value, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await apiError(resp));
+    answer = await resp.json();
+  } catch (e) {
+    run.apiError = e.message;
+    setStep('signal', 'fail', e.message);
+    log('fail', `recorder API: ${e.message}`);
+    return finish('API error');
+  }
+  run.apiMs = Math.round(performance.now() - t);
+  mark('API answer received', `${run.apiMs} ms`);
+  run.remoteCands = parseSdpCandidates(answer.sdp_answer || '');
+  fillTable('cand-remote', run.remoteCands.map((c) => [c.type, c.protocol, `${c.address}:${c.port}`]));
+  run.sessionId = answer.id;
+  setTile('m-session', answer.id || '–');
+  setStep('signal', 'ok', `answer in ${Math.round(performance.now() - t)} ms, session ${answer.id}`);
+  log('ok', `session ${answer.id} created`);
+
+  // on a fast LAN ICE may connect before setRemoteDescription resolves
+  run.t0 = Date.now();
+  setStep('ice', 'run', 'connecting…');
+  await pc.setRemoteDescription({ type: 'answer', sdp: answer.sdp_answer });
+
+  run.pollTimer = setInterval(poll, POLL_MS);
+}
+
+function onIceState(state) {
+  if (!run || run.finished) return;
+  setTile('m-ice', state);
+  const level = { connected: 'ok', completed: 'ok', disconnected: 'warn', failed: 'fail' }[state] || 'info';
+  log(level, `ICE ${state}`);
+  mark(`ICE ${state}`);
+  if (state === 'connected' || state === 'completed') {
+    run.connectedEver = true;
+    setStep('ice', 'ok', `connected in ${Date.now() - run.t0} ms`);
+  } else if (state === 'disconnected') {
+    run.disconnects++;
+    setStep('ice', 'warn', `disconnected ${run.disconnects} time(s)`);
+  } else if (state === 'failed') {
+    setStep('ice', 'fail', 'ICE failed: no network path to the recorder');
+    finish('ICE failed');
+  }
+}
+
+async function poll() {
+  if (!run || run.finished || !run.pc) return;
+  const report = await run.pc.getStats();
+  const byId = new Map();
+  let out, rin, transport, pair;
+  report.forEach((s) => {
+    byId.set(s.id, s);
+    if (s.type === 'outbound-rtp' && s.kind === 'video') out = s;
+    if (s.type === 'remote-inbound-rtp' && s.kind === 'video') rin = s;
+    if (s.type === 'transport') transport = s;
+  });
+  pair = transport && byId.get(transport.selectedCandidatePairId);
+  if (!pair) report.forEach((s) => { if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') pair = s; });
+  const local = pair && byId.get(pair.localCandidateId);
+  const remote = pair && byId.get(pair.remoteCandidateId);
+
+  const now = Date.now();
+  const prev = run.samples[run.samples.length - 1];
+  const s = {
+    t: now,
+    bytesSent: out ? out.bytesSent : 0,
+    packetsSent: out ? out.packetsSent : 0,
+    retrans: out ? out.retransmittedPacketsSent || 0 : 0,
+    nack: out ? out.nackCount || 0 : 0,
+    pli: out ? out.pliCount || 0 : 0,
+    width: out && out.frameWidth, height: out && out.frameHeight, fps: out && out.framesPerSecond,
+    ql: out && out.qualityLimitationReason,
+    qld: out && out.qualityLimitationDurations,
+    lost: rin ? rin.packetsLost : null,
+    fractionLost: rin ? rin.fractionLost : null,
+    rttMs: pair && pair.currentRoundTripTime != null ? pair.currentRoundTripTime * 1000 : rin && rin.roundTripTime != null ? rin.roundTripTime * 1000 : null,
+    jitterMs: rin && rin.jitter != null ? rin.jitter * 1000 : null,
+    aobKbps: pair && pair.availableOutgoingBitrate != null ? pair.availableOutgoingBitrate / 1000 : null,
+    path: local ? `${local.candidateType}${local.relayProtocol ? '/' + local.relayProtocol : ''} ${local.protocol} → ${remote ? remote.candidateType + ' ' + (remote.address || remote.ip || '') + ':' + remote.port : '?'}` : null,
+  };
+  s.kbps = prev ? ((s.bytesSent - prev.bytesSent) * 8) / (now - prev.t) : 0;
+  run.samples.push(s);
+
+  if (s.path && s.path !== run.lastPath) {
+    log(run.lastPath ? 'warn' : 'info', `media path: ${s.path}`);
+    run.lastPath = s.path;
+  }
+
+  if (!run.firstMedia && s.bytesSent > 0) { run.firstMedia = true; mark('first media sent'); }
+  if (!run.firstRR && rin) { run.firstRR = true; mark('first receiver report from recorder', s.rttMs != null ? `RTT ${Math.round(s.rttMs)} ms` : ''); }
+
+  if (out) {
+    const codec = out.codecId && byId.get(out.codecId);
+    run.codec = {
+      mimeType: codec && codec.mimeType,
+      encoder: out.encoderImplementation,
+      hardware: out.powerEfficientEncoder,
+    };
+    setTile('m-codec', `${(run.codec.mimeType || '?').replace('video/', '')} · ${run.codec.encoder || '?'}${run.codec.hardware === true ? ' (hw)' : run.codec.hardware === false ? ' (sw)' : ''}`);
+  }
+  if (transport) {
+    run.transport = {
+      dtlsState: transport.dtlsState,
+      tlsVersion: transport.tlsVersion,
+      dtlsCipher: transport.dtlsCipher,
+      srtpCipher: transport.srtpCipher,
+      iceRole: transport.iceRole,
+      selectedPairChanges: transport.selectedCandidatePairChanges,
+    };
+    setTile('m-dtls', `${transport.dtlsState || '?'} · ${transport.srtpCipher || '?'}`);
+  }
+
+  run.pairs = [];
+  report.forEach((p) => {
+    if (p.type !== 'candidate-pair') return;
+    run.pairs.push({
+      local: fmtCand(byId.get(p.localCandidateId)),
+      remote: fmtCand(byId.get(p.remoteCandidateId)),
+      state: p.state + (p.nominated ? ', nominated' : ''),
+      requestsSent: p.requestsSent,
+      responsesReceived: p.responsesReceived,
+      rttMs: p.currentRoundTripTime != null ? Math.round(p.currentRoundTripTime * 1000) : null,
+      selected: pair ? p.id === pair.id : false,
+    });
+  });
+  fillTable('pairs', run.pairs.map((p) => [p.local, p.remote, p.state, p.requestsSent, p.responsesReceived, p.rttMs != null ? `${p.rttMs} ms` : null]),
+    (i) => (run.pairs[i].selected ? 'selected' : run.pairs[i].requestsSent > 0 && !run.pairs[i].responsesReceived ? 'dead' : ''));
+
+  const elapsed = Math.round((now - run.t0) / 1000);
+  const lossPct = s.lost != null && s.packetsSent ? (s.lost / s.packetsSent) * 100 : null;
+  const retransPct = s.packetsSent ? (s.retrans / s.packetsSent) * 100 : null;
+  setTile('m-path', s.path || '–');
+  setTile('m-rtt', s.rttMs != null ? `${Math.round(s.rttMs)} ms` : '–');
+  setTile('m-bitrate', `${Math.round(s.kbps)} kbps`);
+  setTile('m-loss', lossPct != null ? `${fmt(lossPct, 2)} %` : '–');
+  setTile('m-retrans', retransPct != null ? `${fmt(retransPct, 2)} %` : '–');
+  setTile('m-nack', `${s.nack} / ${s.pli}`);
+  setTile('m-video', s.width ? `${s.width}×${s.height} @ ${fmt(s.fps, 0)} fps` : '–');
+  setTile('m-ql', s.ql || '–');
+  setTile('m-elapsed', `${elapsed} s`);
+
+  drawChart('c-bitrate', run.samples.map((x) => x.kbps));
+  drawChart('c-rtt', run.samples.map((x) => x.rttMs));
+  drawChart('c-loss', run.samples.map((x) => (x.fractionLost != null ? x.fractionLost * 100 : null)));
+
+  if (s.kbps > 0) {
+    setStep('media', 'ok', `sending ${Math.round(s.kbps)} kbps${s.lost == null ? ', waiting for receiver reports' : ''}`);
+  } else if (elapsed >= MEDIA_TIMEOUT_S) {
+    setStep('media', 'fail', `no media sent after ${MEDIA_TIMEOUT_S} s`);
+    return finish('no media');
+  }
+
+  const duration = Number($('duration').value);
+  if (duration && elapsed >= duration) finish('done');
+}
+
+async function finish(reason) {
+  if (!run || run.finished) return;
+  run.finished = true;
+  run.reason = reason;
+  clearInterval(run.pollTimer);
+  clearInterval(run.drawTimer);
+  log('info', `finished: ${reason}`);
+
+  if (run.sessionId) {
+    try {
+      const resp = await fetch(apiUrl(`/${run.sessionId}`), {
+        method: 'DELETE',
+        headers: { 'X-Webitel-Access': $('token').value },
+      });
+      log(resp.ok ? 'info' : 'warn', resp.ok ? 'session stopped on the server' : `stop session: ${await apiError(resp)}`);
+    } catch (e) {
+      log('warn', `stop session: ${e.message}`);
+    }
+  }
+  if (run.pc) run.pc.close();
+  if (run.stream) run.stream.getTracks().forEach((t) => t.stop());
+
+  run.verdict = evaluate();
+  renderVerdict(run.verdict);
+  $('start').disabled = false; $('stop').disabled = true;
+  $('copy').disabled = false; $('download').disabled = false;
+}
+
+// ---------- verdict ----------
+
+function median(arr) {
+  const v = arr.filter((x) => x != null).sort((a, b) => a - b);
+  return v.length ? v[Math.floor(v.length / 2)] : null;
+}
+
+function evaluate() {
+  const issues = [];
+  const add = (level, text) => issues.push({ level, text });
+  const samples = run.samples;
+  const last = samples[samples.length - 1];
+
+  if (run.apiError) add('fail', `Recorder API is not reachable or rejected the request: ${run.apiError}`);
+  if (run.gather.some((g) => g.status === 'fail')) add('warn', 'TURN server is not usable from this workstation; clients behind a strict firewall will not be able to record');
+  if (run.sessionId && !run.connectedEver) add('fail', 'ICE connection to the recorder was not established: UDP to the recorder host and TURN are blocked');
+  if (run.gatherMs != null && run.gatherMs > 3000) {
+    add('warn', `ICE gathering took ${fmt(run.gatherMs / 1000)} s. The recorder client waits for gathering to finish, so every recording starts that much later (usually an unreachable STUN/TURN server)`);
+  }
+  if (run.apiMs != null && run.apiMs > 2000) add('warn', `Recorder API answered slowly: ${fmt(run.apiMs / 1000)} s`);
+  if (run.iceErrors.length) add('warn', `ICE candidate errors: ${[...new Set(run.iceErrors)].join('; ')}`);
+  if (run.sessionId && !run.remoteCands.length) add('warn', 'Recorder answer has no ICE candidates: check the recorder network configuration');
+  const blocked = run.pairs.filter((p) => !p.selected && p.requestsSent > 0 && !p.responsesReceived && /^host/.test(p.remote));
+  if (blocked.length && run.pairs.some((p) => p.selected && /^relay/.test(p.local))) {
+    add('info', `Direct UDP to the recorder is blocked (${blocked.map((p) => p.remote).join(', ')}), media goes through TURN`);
+  }
+  if (run.disconnects) add('warn', `Connection dropped (ICE disconnected) ${run.disconnects} time(s) during the test`);
+
+  const summary = {};
+  if (last && last.packetsSent) {
+    const sent = last.packetsSent;
+    summary.lossPct = last.lost != null ? (last.lost / sent) * 100 : null;
+    summary.retransPct = (last.retrans / sent) * 100;
+    summary.rttMedianMs = median(samples.map((x) => x.rttMs));
+    summary.jitterMedianMs = median(samples.map((x) => x.jitterMs));
+    summary.avgKbps = samples.length > 1 ? ((last.bytesSent - samples[0].bytesSent) * 8) / (last.t - samples[0].t) : 0;
+    summary.path = last.path;
+    summary.nack = last.nack;
+    summary.pli = last.pli;
+    summary.availableKbpsMedian = median(samples.map((x) => x.aobKbps));
+
+    if (summary.lossPct == null) add('warn', 'No receiver reports from the recorder: RTCP does not come back, loss cannot be measured');
+    else if (summary.lossPct > 2) add('fail', `High packet loss: ${fmt(summary.lossPct, 2)} %. Recordings will have visual artifacts`);
+    else if (summary.lossPct > 0.5) add('warn', `Noticeable packet loss: ${fmt(summary.lossPct, 2)} %`);
+
+    if (summary.retransPct > 5) add('warn', `Many retransmissions: ${fmt(summary.retransPct, 2)} % of packets were resent (lossy network)`);
+    if (summary.rttMedianMs > 300) add('fail', `Very high round-trip time: ${Math.round(summary.rttMedianMs)} ms`);
+    else if (summary.rttMedianMs > 150) add('warn', `High round-trip time: ${Math.round(summary.rttMedianMs)} ms`);
+    if (summary.avgKbps < 150) add('warn', `Low bitrate: ${Math.round(summary.avgKbps)} kbps, recording quality will be poor`);
+
+    // qualityLimitationDurations are cumulative, compare against the first sample after warm-up
+    const base = samples.find((x) => x.t - run.t0 >= WARMUP_S * 1000 && x.qld);
+    if (last.qld && base && base !== last) {
+      const d = (k) => (last.qld[k] || 0) - (base.qld[k] || 0);
+      const total = Object.keys(last.qld).reduce((a, k) => a + d(k), 0) || 1;
+      // "bandwidth" (and reduced resolution) is also reported while the estimator is still ramping up
+      // on a good link, so only a low estimate means a real network problem
+      const after = samples.filter((x) => x.t >= base.t);
+      const aob = median(after.map((x) => x.aobKbps));
+      const downscaled = run.srcWidth > 0 && after.some((x) => x.width && x.width < run.srcWidth);
+      const pct = Math.round((d('bandwidth') / total) * 100);
+      if (pct > 20 && aob != null && aob < LOW_BANDWIDTH_KBPS) {
+        add('warn', `Video was limited by bandwidth ${pct} % of the time (estimated ${Math.round(aob || 0)} kbps${downscaled ? ', resolution reduced' : ''})`);
+      }
+      if (d('cpu') / total > 0.2) {
+        const sw = run.codec && run.codec.hardware === false ? ` (software encoder ${run.codec.encoder || ''})` : '';
+        add('warn', `Video was limited by CPU ${Math.round((d('cpu') / total) * 100)} % of the time${sw}: the workstation is overloaded`);
+      }
+    }
+    if (last.path && /^relay/.test(last.path)) add('info', 'Media goes through the TURN relay');
+  } else if (run.connectedEver) {
+    add('fail', 'Connection established but no media was sent');
+  }
+
+  const level = issues.some((i) => i.level === 'fail') ? 'fail' : issues.some((i) => i.level === 'warn') ? 'warn' : 'ok';
+  return { level, issues, summary };
+}
+
+function renderVerdict(v) {
+  $('verdict').style.display = 'block';
+  const pill = $('verdict-pill');
+  pill.className = 'pill ' + v.level;
+  pill.textContent = v.level;
+  $('verdict-title').textContent = {
+    ok: 'Connection is fine for screen recording',
+    warn: 'Recording works, but the connection has problems',
+    fail: 'Screen recording will not work reliably from this workstation',
+  }[v.level];
+  const ul = $('verdict-list');
+  ul.innerHTML = '';
+  const items = v.issues.length ? v.issues : [{ level: 'ok', text: 'No problems detected' }];
+  items.forEach((i) => {
+    const li = document.createElement('li');
+    li.textContent = i.text;
+    ul.appendChild(li);
+  });
+  if (run.sessionId) {
+    const li = document.createElement('li');
+    li.textContent = `Server-side stats: grep the recorder log for "session stats" with session ${run.sessionId}`;
+    ul.appendChild(li);
+  }
+}
+
+// ---------- report ----------
+
+function buildReport() {
+  let ice = [];
+  try { ice = maskedIceServers(parseIceServers()); } catch (e) { /* invalid json */ }
+  return {
+    tool: 'webrtc-recorder-diag',
+    startedAt: run.startedAt,
+    finishedReason: run.reason,
+    userAgent: navigator.userAgent,
+    settings: { base: $('base').value, source: $('source').value, duration: $('duration').value, policy: $('policy').value, iceServers: ice },
+    sessionId: run.sessionId,
+    verdict: run.verdict,
+    env: run.env,
+    timeline: run.marks,
+    gatherMs: run.gatherMs,
+    apiMs: run.apiMs,
+    localCandidates: run.localCands,
+    remoteCandidates: run.remoteCands,
+    iceErrors: run.iceErrors,
+    candidatePairs: run.pairs,
+    codec: run.codec,
+    transport: run.transport,
+    gather: run.gather,
+    events: run.events,
+    samples: run.samples,
+  };
+}
+
+async function copyReport() {
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(buildReport(), null, 2));
+    log('info', 'report copied to clipboard');
+  } catch (e) {
+    log('warn', `copy failed: ${e.message}, use Download`);
+  }
+}
+
+function downloadReport() {
+  const blob = new Blob([JSON.stringify(buildReport(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `webrtc-diag-${run.startedAt.replace(/[:.]/g, '-')}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+$('start').addEventListener('click', () => start().catch((e) => { log('fail', e.message); finish('error'); }));
+$('stop').addEventListener('click', () => finish('stopped by user'));
+$('copy').addEventListener('click', copyReport);
+$('download').addEventListener('click', downloadReport);
+window.addEventListener('beforeunload', () => { if (run && !run.finished) finish('page closed'); });
+
+loadSettings();
+resetUI();
+</script>
+</body>
+</html>
