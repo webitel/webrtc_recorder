@@ -74,7 +74,7 @@ func (svc *WebRtcRecorder) UploadP2PVideo(sdpOffer string, file model.File, ice 
 
 	err = session.negotiate(sdpOffer)
 	if err != nil {
-		session.close()
+		session.shutdown()
 
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (svc *WebRtcRecorder) RenegotiateP2P(id, sdpOffer string) (model.RtcUploadV
 	// TODO singleflight
 	err = sess.negotiate(sdpOffer)
 	if err != nil {
-		sess.close()
+		sess.shutdown()
 
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (svc *WebRtcRecorder) CloseP2P(id string) error {
 	}
 
 	// TODO singleflight
-	session.(*RtcUploadMediaSession).close()
+	session.(*RtcUploadMediaSession).shutdown()
 
 	return nil
 }
