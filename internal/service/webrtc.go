@@ -128,6 +128,16 @@ func (svc *WebRtcRecorder) stopVideoSession(s *RtcUploadMediaSession) {
 		s.fileConfig.EndTime = model.GetMillis()
 	}
 
+	if s.fileConfig.IsDiagnostic() {
+		s.log.Info("diagnostic session finished, recording discarded")
+
+		if err := svc.temp.DeleteFile(s.fileConfig); err != nil {
+			s.log.Error(err.Error(), wlog.Err(err))
+		}
+
+		return
+	}
+
 	err := svc.transcoding.CreateJob(s.fileConfig)
 	if err != nil {
 		s.log.Error(err.Error(), wlog.Err(err))
