@@ -7,6 +7,7 @@ import (
 
 	"github.com/webitel/wlog"
 
+	"github.com/webitel/webrtc_recorder/infra/metrics"
 	"github.com/webitel/webrtc_recorder/internal/model"
 )
 
@@ -49,6 +50,8 @@ func (s *SessionStore) Get(id string) (model.RtcUploadVideoSession, error) {
 
 func (s *SessionStore) Remove(id string) bool {
 	ok := s.sess.Remove(id)
+	metrics.SessionsActive.Set(float64(s.sess.Len()))
+
 	if !ok {
 		s.log.Debug("session cache miss", wlog.String("session_id", id))
 	}
@@ -59,6 +62,7 @@ func (s *SessionStore) Remove(id string) bool {
 func (s *SessionStore) Add(id string, sess model.RtcUploadVideoSession) error {
 	s.log.Debug("adding new session to cache", wlog.String("session_id", id))
 	s.sess.Add(id, sess)
+	metrics.SessionsActive.Set(float64(s.sess.Len()))
 
 	return nil
 }

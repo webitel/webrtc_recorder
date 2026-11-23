@@ -85,6 +85,7 @@
 | `--bind-address`, `-b` | `BIND_ADDRESS` | Адреса для внутрішніх комунікацій кластера | `localhost:50011` |
 | `--consul-discovery`, `-c` | `CONSUL` | Адреса service discovery (Consul) | `127.0.0.1:8500` |
 | `--service-id`, `-i` | `ID` | Ідентифікатор сервісу | `1` |
+| `--metrics-address` | `METRICS_ADDRESS` | Адреса Prometheus ендпоінту `/metrics`, порожньо — вимкнено | `""` |
 
 #### **Transcoding**
 | Прапор | Змінна середовища | Опис | Значення за замовчуванням |
@@ -151,3 +152,18 @@
 ## Розгортання
 
 У директорії `deploy/systemd` знаходиться приклад `systemd` unit файлу для запуску сервісу на Linux системах.
+
+## Моніторинг
+
+Метрики Prometheus вмикаються через `METRICS_ADDRESS` (наприклад `:9090`) і доступні на `/metrics`. Усі метрики сервісу мають префікс `webrtc_recorder_`:
+
+- черга і виконання задач транскодингу/завантаження: `jobs_total{type,result}`, `job_duration_seconds`, `jobs_in_progress`, `workers`, `jobs_backlog`, `jobs_oldest_age_seconds`;
+- транскодинг: `transcoding_speed_ratio`, `transcoding_media_seconds_total`;
+- завантаження: `upload_bytes_total`, `upload_file_size_bytes`;
+- WebRTC сесії та якість з'єднання: `sessions_active`, `sessions_total`, `session_*`, `rtp_packets_total`, `rtp_feedback_total`;
+- вільне місце на диску з тимчасовими файлами: `temp_dir_free_bytes`, `temp_dir_size_bytes`.
+
+`result="dropped"` означає, що задача вичерпала спроби і запис втрачено.
+
+- `deploy/grafana/webrtc-recorder.json` — дашборд Grafana (Dashboards → Import);
+- `deploy/prometheus/alerts.yml` — правила алертів Prometheus.

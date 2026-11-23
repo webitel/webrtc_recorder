@@ -13,6 +13,7 @@ import (
 	"github.com/webitel/webrtc_recorder/infra/auth"
 	"github.com/webitel/webrtc_recorder/infra/consul"
 	"github.com/webitel/webrtc_recorder/infra/grpc_srv"
+	"github.com/webitel/webrtc_recorder/infra/metrics"
 	_ "github.com/webitel/webrtc_recorder/infra/resolver"
 	"github.com/webitel/webrtc_recorder/infra/sql"
 	"github.com/webitel/webrtc_recorder/infra/sql/pgsql"
@@ -20,10 +21,12 @@ import (
 	"github.com/webitel/webrtc_recorder/infra/webrtc"
 	"github.com/webitel/webrtc_recorder/internal/handler"
 	"github.com/webitel/webrtc_recorder/internal/model"
+	"github.com/webitel/webrtc_recorder/internal/service"
 )
 
 type handlers struct {
 	webrtcRecorder *handler.WebRTCRecorder
+	stats          *service.StatsCollector
 }
 
 type resources struct {
@@ -35,6 +38,7 @@ type resources struct {
 	auth    auth.Manager
 	cfg     *config.Config
 	storage *storage.Storage
+	metrics *metrics.Server
 }
 
 func grpcSrv(cfg *config.Config, l *wlog.Logger, am auth.Manager) (*grpc_srv.Server, func(), error) {
@@ -78,6 +82,23 @@ func log(cfg *config.Config) (*wlog.Logger, func(), error) {
 	}
 
 	return l, exit, nil
+}
+
+func metricsSrv(cfg *config.Config, l *wlog.Logger) (*metrics.Server, func(), error) {
+	if cfg.Service.Metrics == "" {
+		return nil, func() {}, nil
+	}
+
+	s, err := metrics.NewServer(cfg.Service.Metrics)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return s, func() {
+		if err := s.Shutdown(); err != nil {
+			l.Error(err.Error(), wlog.Err(err))
+		}
+	}, nil
 }
 
 func setupCluster(cfg *config.Config, srv *grpc_srv.Server, l *wlog.Logger) (*consul.Cluster, func(), error) {

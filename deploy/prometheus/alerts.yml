@@ -1,0 +1,49 @@
+groups:
+  - name: webrtc-recorder
+    rules:
+      - alert: WebRTCRecorderRecordingLost
+        expr: increase(webrtc_recorder_jobs_total{result="dropped"}[15m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.type }} job dropped on {{ $labels.instance }}"
+          description: "A job reached max retries and was deleted — the recording never reached storage. Check service logs for 'max attempts reached'."
+
+      - alert: WebRTCRecorderPipelineStuck
+        expr: webrtc_recorder_jobs_oldest_age_seconds > 1800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.type }} backlog on {{ $labels.instance }} is older than 30m"
+          description: "Oldest {{ $labels.type }} job is {{ $value | humanizeDuration }} old. Workers can't keep up or the storage service is unavailable."
+
+      - alert: WebRTCRecorderHighErrorRate
+        expr: |
+          sum by (instance, type) (rate(webrtc_recorder_jobs_total{result!="success"}[15m]))
+            / sum by (instance, type) (rate(webrtc_recorder_jobs_total[15m])) > 0.2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.type }} error rate {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      - alert: WebRTCRecorderTempDiskLow
+        expr: webrtc_recorder_temp_dir_free_bytes / webrtc_recorder_temp_dir_size_bytes < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Temp dir on {{ $labels.instance }} has {{ $value | humanizePercentage }} free"
+          description: "Recordings are buffered on disk until uploaded; a full disk breaks active sessions."
+
+      - alert: WebRTCRecorderTranscodingSaturated
+        expr: |
+          sum by (instance) (webrtc_recorder_jobs_in_progress{type="transcoding"})
+            >= sum by (instance) (webrtc_recorder_workers{type="transcoding"})
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "All transcoding workers on {{ $labels.instance }} busy for 30m"
+          description: "Consider increasing TRANSCODING_WORKERS (each worker is one ffmpeg process) or adding CPU."

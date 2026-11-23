@@ -121,3 +121,22 @@ where id = @id`, map[string]any{
 		"id": id,
 	})
 }
+
+func (s *FileJobStore) Stats() ([]*model.JobStats, error) {
+	var stats []*model.JobStats
+
+	err := s.db.Select(s.ctx, &stats, `select type,
+       state,
+       count(*)::int as count,
+       extract(epoch from now() - min(created_at))::float8 as oldest_age
+from webrtc_rec.file_jobs
+where instance = @instance
+group by type, state`, map[string]any{
+		"instance": s.instance,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}

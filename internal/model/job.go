@@ -24,3 +24,10 @@ func (j *JobConfig) JSON() []byte {
 
 	return js
 }
+
+type JobStats struct {
+	Type      string   `db:"type"`
+	State     JobState `db:"state"`
+	Count     int      `db:"count"`
+	OldestAge float64  `db:"oldest_age"`
+}
