@@ -50,6 +50,14 @@ func (a *App) Run() (func(), error) {
 		return r.grpcSrv.Listen()
 	})
 
+	if r.metrics != nil {
+		a.eg.Go(func() error {
+			a.log.Info("listen metrics " + r.metrics.Addr())
+
+			return r.metrics.Listen()
+		})
+	}
+
 	return shutdown, nil
 }
 
@@ -113,6 +121,14 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			Destination: &cfg.Service.Consul,
 			Aliases:     []string{"c"},
 			EnvVars:     []string{"CONSUL"},
+		},
+		&cli.StringFlag{
+			Name:        "metrics-address",
+			Category:    "observability/metrics",
+			Usage:       "address of the Prometheus /metrics endpoint, empty to disable (e.g. :9090)",
+			Value:       "",
+			Destination: &cfg.Service.Metrics,
+			EnvVars:     []string{"METRICS_ADDRESS"},
 		},
 		&cli.StringFlag{
 			Name:        "postgresql-dsn",

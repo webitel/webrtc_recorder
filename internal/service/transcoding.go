@@ -7,6 +7,7 @@ import (
 	"github.com/webitel/wlog"
 
 	"github.com/webitel/webrtc_recorder/config"
+	"github.com/webitel/webrtc_recorder/infra/metrics"
 	"github.com/webitel/webrtc_recorder/internal/model"
 	"github.com/webitel/webrtc_recorder/internal/utils"
 )
@@ -39,6 +40,7 @@ type transcodingJob struct {
 func NewTranscoding(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, tmp *TempFileService, upl *Uploader) *Transcoding {
 	tr := &Transcoding{
 		jobHandler: jobHandler{
+			name:     TranscodingJobName,
 			ctx:      ctx,
 			jobStore: fjs,
 			log:      log,
@@ -49,6 +51,8 @@ func NewTranscoding(ctx context.Context, cfg *config.Config, log *wlog.Logger, f
 		limit:    cfg.Transcoding.Queue + cfg.Transcoding.Workers,
 		pool:     utils.NewPool(ctx, cfg.Transcoding.Workers, cfg.Transcoding.Queue),
 	}
+
+	metrics.Workers.WithLabelValues(TranscodingJobName).Set(float64(cfg.Transcoding.Workers))
 
 	go tr.listen()
 
@@ -108,7 +112,7 @@ func (svc *Transcoding) listen() {
 
 			for _, job := range jobs {
 				job.Retry++
-				svc.inflight.Inc()
+				svc.dispatched()
 				svc.pool.Exec(&transcodingJob{
 					svc: svc,
 					baseJob: &baseJob{
@@ -133,17 +137,25 @@ func (j *transcodingJob) Execute() {
 	mp4File.MimeType = "video/mp4" // TODO
 
 	now := time.Now()
+	done := j.svc.startJob(j.baseJob, j.svc.maxRetry)
+
+	var durationMs int
 
 	defer func() {
 		if err != nil {
 			j.svc.errorJob(j.baseJob, j.svc.maxRetry, err)
 		} else {
+			if elapsed := time.Since(now).Seconds(); durationMs > 0 && elapsed > 0 {
+				metrics.TranscodingMediaSeconds.Add(float64(durationMs) / 1000)
+				metrics.TranscodingSpeed.Observe(float64(durationMs) / 1000 / elapsed)
+			}
+
 			j.log.Debug("success job", wlog.Duration("duration", time.Since(now)))
 			j.svc.successJob(j, &mp4File)
 		}
 
 		// release the slot only after the job state is saved, so the listener does not over-fetch
-		j.svc.inflight.Dec()
+		done(err)
 	}()
 
 	err = j.svc.tempFile.NewFilePath(&mp4File, "mp4")
@@ -151,7 +163,6 @@ func (j *transcodingJob) Execute() {
 		return
 	}
 	actualDurationMs := j.job.File.EndTime - j.job.File.StartTime
-	var durationMs int
 	durationMs, err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path, actualDurationMs)
 
 	if err != nil {

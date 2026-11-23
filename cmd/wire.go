@@ -15,7 +15,7 @@ import (
 )
 
 var wireAppResourceSet = wire.NewSet(
-	log, grpcSrv, setupCluster, setupSQL, webrtcAPI, authManager, storageClient,
+	log, grpcSrv, setupCluster, setupSQL, webrtcAPI, authManager, storageClient, metricsSrv,
 )
 
 var wireAppHandlersSet = wire.NewSet(
@@ -25,6 +25,7 @@ var wireAppHandlersSet = wire.NewSet(
 	service.NewTempFileService,
 	service.NewUploader,
 	service.NewTranscoding, wire.Bind(new(service.FileJobStore), new(*store.FileJobStore)),
+	service.NewStatsCollector, wire.Bind(new(service.JobStatsStore), new(*store.FileJobStore)),
 
 	service.NewWebRtcRecorder, wire.Bind(new(service.SessionStore), new(*store.SessionStore)),
 
@@ -33,7 +34,7 @@ var wireAppHandlersSet = wire.NewSet(
 
 func initAppResources(context.Context, *config.Config) (*resources, func(), error) {
 	wire.Build(wireAppResourceSet, wire.Struct(new(resources),
-		"log", "store", "grpcSrv", "cluster", "webrtc", "auth", "storage", "cfg"))
+		"log", "store", "grpcSrv", "cluster", "webrtc", "auth", "storage", "cfg", "metrics"))
 
 	return &resources{}, nil, nil
 }
@@ -41,7 +42,7 @@ func initAppResources(context.Context, *config.Config) (*resources, func(), erro
 func initAppHandlers(context.Context, *resources) (*handlers, error) {
 	wire.Build(wireAppHandlersSet,
 		wire.FieldsOf(new(*resources), "log", "grpcSrv", "webrtc", "storage", "cfg", "store"),
-		wire.Struct(new(handlers), "webrtcRecorder"),
+		wire.Struct(new(handlers), "webrtcRecorder", "stats"),
 	)
 
 	return &handlers{}, nil

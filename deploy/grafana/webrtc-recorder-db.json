@@ -1,0 +1,1929 @@
+{
+  "title": "Webitel WebRTC Recorder (DB)",
+  "uid": "webitel-webrtc-recorder-db",
+  "description": "Черга транскодингу/завантаження і завантажені записи екрана — з даних PostgreSQL, без змін у сервісі.",
+  "tags": [
+    "webitel",
+    "webrtc",
+    "recorder",
+    "postgres"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "PostgreSQL",
+        "type": "datasource",
+        "query": "grafana-postgresql-datasource",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "domain",
+        "label": "Домен",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "query": "select name as __text, dc as __value from directory.wbt_domain order by name",
+        "definition": "select name as __text, dc as __value from directory.wbt_domain order by name",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Черга рекордера зараз — webrtc_rec.file_jobs",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Транскодинг: чекає",
+      "id": 2,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Записи, які чекають на ffmpeg (state = 0). Сюди ж повертаються задачі після помилки, до наступної спроби.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from webrtc_rec.file_jobs j where j.type = 'transcoding' and j.state = 0 and (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Транскодинг: взято",
+      "id": 3,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "state = 1: інстанс забрав задачу — вона виконується (до TRANSCODING_WORKERS) або чекає в буфері пулу (до TRANSCODING_QUEUE). Норма на інстанс: workers + queue. У версіях без фіксу over-fetch може бути до 2 × (workers + queue).",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from webrtc_rec.file_jobs j where j.type = 'transcoding' and j.state = 1 and (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Upload: чекає",
+      "id": 4,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Транскодовані mp4, які чекають на відправку в storage.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from webrtc_rec.file_jobs j where j.type = 'upload' and j.state = 0 and (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Upload: взято",
+      "id": 5,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "state = 1: виконується або чекає в буфері пулу. Норма на інстанс: UPLOADER_WORKERS + UPLOADER_QUEUE.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from webrtc_rec.file_jobs j where j.type = 'upload' and j.state = 1 and (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Найстаріша задача",
+      "id": 6,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Скільки часу запис сидить у черзі від завершення сесії. Росте — пайплайн застряг або не встигає.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(extract(epoch from now() - min(j.created_at)), 0) from webrtc_rec.file_jobs j where (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 600
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Задачі з помилкою",
+      "id": 7,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Задачі, в яких хоча б одна спроба впала (поле error). Деталі — в таблиці нижче.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 15,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from webrtc_rec.file_jobs j where j.error is not null and (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Ймовірно зависли",
+      "id": 8,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "state = 1, а від моменту, коли задачу взяли, минуло більше ніж max(30 хв, 2 × тривалість запису). activity_at не оновлюється під час роботи ffmpeg, тому поріг залежить від тривалості. Причини: інстанс упав або перезапустився з іншим ID (Reset повертає в чергу лише задачі свого instance), або завис ffmpeg.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from webrtc_rec.file_jobs j\nwhere j.state = 1 and (j.file ->> 'domain_id')::bigint in ($domain)\n  and j.activity_at < now() - greatest(interval '30 minutes', make_interval(secs => coalesce(nullif((j.file ->> 'end_time')::bigint - (j.file ->> 'start_time')::bigint, 0), 0) / 1000.0 * 2))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Відео в черзі",
+      "id": 9,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Сумарна тривалість записів, що ще не дійшли до storage.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(nullif((j.file ->> 'end_time')::bigint - (j.file ->> 'start_time')::bigint, 0)), 0) / 1000.0 from webrtc_rec.file_jobs j where (j.file ->> 'domain_id')::bigint in ($domain)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Черга по інстансах",
+      "id": 10,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Якщо в інстансу «Остання активність» велика, а задачі є — інстанс не працює або не бачить свою чергу.",
+      "gridPos": {
+        "h": 8,
+        "w": 14,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select j.instance as \"Інстанс\",\n       j.type as \"Тип\",\n       case j.state when 0 then 'чекає' when 1 then 'взято' else j.state::text end as \"Стан\",\n       count(*) as \"Задач\",\n       count(*) filter (where j.error is not null) as \"З помилкою\",\n       max(j.retry) as \"Макс. спроба\",\n       extract(epoch from now() - min(j.created_at)) as \"Найстаріша\",\n       extract(epoch from now() - max(j.activity_at)) as \"Остання активність\",\n       sum(case when jsonb_typeof(j.file -> 'track') = 'array' then jsonb_array_length(j.file -> 'track') else 0 end) as \"Треків\"\nfrom webrtc_rec.file_jobs j\nwhere (j.file ->> 'domain_id')::bigint in ($domain)\ngroup by 1, 2, 3\norder by 1, 2, 3",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Найстаріша"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Остання активність"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Найстаріша"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 600
+                    },
+                    {
+                      "color": "red",
+                      "value": 1800
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Номер спроби",
+      "id": 11,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Розподіл задач у черзі за кількістю спроб. Ліміт: transcoding-max-retry (10), uploader-max-retry (20); після нього задача і файли видаляються — запис втрачено.",
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select j.type || ' #' || j.retry as \"Спроба\", count(*) as \"Задач\"\nfrom webrtc_rec.file_jobs j\nwhere (j.file ->> 'domain_id')::bigint in ($domain)\ngroup by j.type, j.retry\norder by j.type, j.retry",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "auto",
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Задачі з помилками",
+      "id": 12,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Останні 100 задач з помилкою. Помилка ffmpeg містить stderr — клікніть на клітинку, щоб побачити повністю.",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select j.id as \"ID\",\n       j.type as \"Тип\",\n       j.instance as \"Інстанс\",\n       j.retry as \"Спроба\",\n       d.name as \"Домен\",\n       coalesce(u.name, u.username::text, (j.file ->> 'uploaded_by')) as \"Користувач\",\n       j.file ->> 'name' as \"Файл\",\n       nullif((j.file ->> 'end_time')::bigint - (j.file ->> 'start_time')::bigint, 0) / 1000 as \"Тривалість\",\n       j.created_at as \"Створено\",\n       j.activity_at as \"Остання спроба\",\n       left(j.error, 500) as \"Помилка\"\nfrom webrtc_rec.file_jobs j\n  left join directory.wbt_domain d on d.dc = (j.file ->> 'domain_id')::bigint\n  left join directory.wbt_user u on u.id = (j.file ->> 'uploaded_by')::bigint\nwhere j.error is not null and (j.file ->> 'domain_id')::bigint in ($domain)\norder by j.activity_at desc\nlimit 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Тривалість"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Помилка"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Спроба"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Тип"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Коли записи потрапили в чергу (ще не оброблені)",
+      "id": 13,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Необроблені задачі за часом створення: показує, з якого моменту почало накопичуватись.",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(j.created_at, $__interval),\n       j.type as metric,\n       count(*) as value\nfrom webrtc_rec.file_jobs j\nwhere $__timeFilter(j.created_at) and (j.file ->> 'domain_id')::bigint in ($domain)\ngroup by 1, 2\norder by 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum",
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Завантажені записи — storage.files",
+      "id": 14,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Записів",
+      "id": 15,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Відеозаписи (mp4), які рекордер успішно доніс до storage, за датою початку сесії.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) from storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Тривалість відео",
+      "id": 16,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)), 0) / 1000.0 from storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Обсяг",
+      "id": 17,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(f.size), 0) from storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Середня тривалість",
+      "id": 18,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Тривалість береться з custom_properties (start_time/end_time); записи старих версій рекордера без них не враховуються.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0 from storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Середній бітрейт",
+      "id": 19,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Розмір mp4 / тривалість. Потрібно для планування місця: ГБ на годину запису = бітрейт × 450.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(f.size) * 8.0 / nullif(sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0, 0)\nfrom storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000 and nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) > 0",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Без превʼю",
+      "id": 20,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Рекордер завжди просить згенерувати thumbnail; якщо його немає — storage не зміг декодувати відео (часто ознака битого файлу).",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) filter (where f.thumbnail is null)::float / nullif(count(*), 0)\nfrom storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.02
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Записів",
+      "id": 21,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "За часом початку сесії; channel: screenrecording — запис екрана, call — запис екрана під час дзвінка.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 34
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(f.uploaded_at, $__interval),\n       f.channel as metric,\n       count(*) as value\nfrom storage.files f\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\ngroup by 1, 2\norder by 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum",
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Тривалість відео",
+      "id": 22,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Скільки відео записано. Це й навантаження на транскодинг: ffmpeg обробляє приблизно стільки ж.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 34
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(f.uploaded_at, $__interval),\n       f.channel as metric,\n       sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0 as value\nfrom storage.files f\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\ngroup by 1, 2\norder by 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum",
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Обсяг",
+      "id": 23,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 34
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(f.uploaded_at, $__interval),\n       f.channel as metric,\n       sum(f.size) as value\nfrom storage.files f\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\ngroup by 1, 2\norder by 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum",
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Бітрейт",
+      "id": 24,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Різкі зміни — зміна кодека/роздільності у клієнтів або налаштувань ffmpeg.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 42
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(f.uploaded_at, $__interval),\n       'середній' as metric,\n       sum(f.size) * 8.0 / nullif(sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0, 0) as value\nfrom storage.files f\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000 and nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) > 0\ngroup by 1, 2\norder by 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum",
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Тривалість записів",
+      "id": 25,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Багато записів < 10 с зазвичай означає, що сесії обриваються одразу після старту (ICE/мережа).",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 42
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with r as (\n  select nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) / 1000 as d from storage.files f where f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\n)\nselect b.label as \"Тривалість\", count(r.d) as \"Записів\"\nfrom (values (1, '< 10 с', 0, 10), (2, '10 с – 1 хв', 10, 60), (3, '1–5 хв', 60, 300), (4, '5–15 хв', 300, 900),\n             (5, '15–60 хв', 900, 3600), (6, '1–2 год', 3600, 7200), (7, '> 2 год', 7200, 1e12)) b(n, label, lo, hi)\n  left join r on r.d >= b.lo and r.d < b.hi\ngroup by b.n, b.label\norder by b.n",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "auto",
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Розмір файлів",
+      "id": 26,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 42
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select b.label as \"Розмір\", count(f.id) as \"Записів\"\nfrom (values (1, '< 1 МБ', 0, 1), (2, '1–10 МБ', 1, 10), (3, '10–100 МБ', 10, 100), (4, '100 МБ – 1 ГБ', 100, 1024),\n             (5, '> 1 ГБ', 1024, 1e12)) b(n, label, lo, hi)\n  left join storage.files f on f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000 and f.size / 1048576.0 >= b.lo and f.size / 1048576.0 < b.hi\ngroup by b.n, b.label\norder by b.n",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "auto",
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Домени",
+      "id": 27,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select d.name as \"Домен\",\n       count(*) as \"Записів\",\n       count(distinct f.uploaded_by) as \"Користувачів\",\n       sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0 as \"Відео\",\n       sum(f.size) as \"Обсяг\",\n       avg(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0 as \"Сер. тривалість\",\n       count(*) filter (where f.thumbnail is null) as \"Без превʼю\"\nfrom storage.files f\n  left join directory.wbt_domain d on d.dc = f.domain_id\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\ngroup by d.name\norder by 4 desc nulls last\nlimit 50",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Відео",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Відео"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Обсяг"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Сер. тривалість"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "Користувачі",
+      "id": 28,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Користувач з великою кількістю коротких записів — ймовірно, проблеми з мережею/TURN саме в нього.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 50
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(u.name, u.username::text, f.uploaded_by::text) as \"Користувач\",\n       d.name as \"Домен\",\n       count(*) as \"Записів\",\n       sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0 as \"Відео\",\n       sum(f.size) as \"Обсяг\",\n       sum(f.size) * 8.0 / nullif(sum(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0)) / 1000.0, 0) as \"Бітрейт\",\n       count(*) filter (where nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) < 10000) as \"Коротких (<10 с)\",\n       max(f.uploaded_at) as \"Останній запис\"\nfrom storage.files f\n  left join directory.wbt_user u on u.id = f.uploaded_by\n  left join directory.wbt_domain d on d.dc = f.domain_id\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\ngroup by 1, 2\norder by 4 desc nulls last\nlimit 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Відео",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Відео"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Обсяг"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Бітрейт"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bps"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "Підозрілі записи",
+      "id": 29,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "description": "Записи, які варто переглянути: без превʼю (не декодується), без тривалості, майже порожні або з дуже низьким бітрейтом (чорний/статичний екран чи втрата відео-треку).",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select f.id as \"ID\",\n       f.uploaded_at as \"Початок\",\n       d.name as \"Домен\",\n       coalesce(u.name, u.username::text, f.uploaded_by::text) as \"Користувач\",\n       f.channel as \"Канал\",\n       f.name as \"Файл\",\n       nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) / 1000.0 as \"Тривалість\",\n       f.size as \"Розмір\",\n       f.size * 8.0 / nullif(nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) / 1000.0, 0) as \"Бітрейт\",\n       concat_ws(', ',\n         case when f.thumbnail is null then 'немає превʼю' end,\n         case when f.custom_properties ? 'start_time' and (nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) is null or nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) < 0) then 'немає тривалості' end,\n         case when f.size < 100 * 1024 then 'файл < 100 КБ' end,\n         case when nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) > 60000 and f.size * 8.0 / (nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) / 1000.0) < 20000 then 'бітрейт < 20 кбіт/с' end,\n         case when f.not_exists then 'файл відсутній у сховищі' end\n       ) as \"Проблема\"\nfrom storage.files f\n  left join directory.wbt_domain d on d.dc = f.domain_id\n  left join directory.wbt_user u on u.id = f.uploaded_by\nwhere f.mime_type = 'video/mp4'\n  and (f.channel = 'screenrecording' or (f.channel = 'call' and f.custom_properties ? 'start_time'))\n  and f.domain_id in ($domain)\n  and f.created_at between $__unixEpochFrom()::bigint * 1000 and $__unixEpochTo()::bigint * 1000\n  and not coalesce(f.removed, false)\n  and (f.thumbnail is null\n    or (f.custom_properties ? 'start_time' and (nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) is null or nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) < 0))\n    or f.size < 100 * 1024\n    or (nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) > 60000 and f.size * 8.0 / (nullif((f.custom_properties ->> 'end_time')::bigint - (f.custom_properties ->> 'start_time')::bigint, 0) / 1000.0) < 20000)\n    or coalesce(f.not_exists, false))\norder by f.created_at desc\nlimit 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Тривалість"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Розмір"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Бітрейт"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Проблема"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

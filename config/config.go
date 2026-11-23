@@ -36,6 +36,7 @@ type Service struct {
 	ID      string
 	Address string
 	Consul  string
+	Metrics string
 }
 
 type RtcSettings struct {

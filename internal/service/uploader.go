@@ -9,6 +9,7 @@ import (
 
 	"github.com/webitel/webrtc_recorder/config"
 	spb "github.com/webitel/webrtc_recorder/gen/storage"
+	"github.com/webitel/webrtc_recorder/infra/metrics"
 	"github.com/webitel/webrtc_recorder/infra/storage"
 	"github.com/webitel/webrtc_recorder/internal/utils"
 )
@@ -35,6 +36,7 @@ type UploadJob struct {
 func NewUploader(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs FileJobStore, tmp *TempFileService, st *storage.Storage) *Uploader {
 	u := &Uploader{
 		jobHandler: jobHandler{
+			name:     UploadJobName,
 			log:      log.With(wlog.String("service", "uploader")),
 			tempFile: tmp,
 			jobStore: fjs,
@@ -45,6 +47,8 @@ func NewUploader(ctx context.Context, cfg *config.Config, log *wlog.Logger, fjs 
 		limit:    cfg.Uploader.Queue + cfg.Uploader.Workers,
 		pool:     utils.NewPool(ctx, cfg.Uploader.Workers, cfg.Uploader.Queue),
 	}
+
+	metrics.Workers.WithLabelValues(UploadJobName).Set(float64(cfg.Uploader.Workers))
 
 	go u.listen()
 
@@ -82,7 +86,7 @@ func (svc *Uploader) listen() {
 
 			for _, job := range jobs {
 				job.Retry++
-				svc.inflight.Inc()
+				svc.dispatched()
 				svc.pool.Exec(&UploadJob{
 					svc: svc,
 					baseJob: &baseJob{
@@ -99,11 +103,13 @@ func (svc *Uploader) listen() {
 
 func (j *UploadJob) Execute() {
 	var (
-		err error
-		src io.ReadCloser
+		err  error
+		src  io.ReadCloser
+		sent int64
 	)
 
 	now := time.Now()
+	done := j.svc.startJob(j.baseJob, j.svc.maxRetry)
 
 	j.log.Debug("execute")
 
@@ -111,12 +117,13 @@ func (j *UploadJob) Execute() {
 		if err != nil {
 			j.svc.errorJob(j.baseJob, j.svc.maxRetry, err)
 		} else {
+			metrics.UploadFileSize.Observe(float64(sent))
 			j.log.Debug("success job", wlog.Duration("duration", time.Since(now)))
 			j.svc.cleanup(j.baseJob)
 		}
 
 		// release the slot only after the job state is saved, so the listener does not over-fetch
-		j.svc.inflight.Dec()
+		done(err)
 	}()
 
 	src, err = j.svc.tempFile.NewReader(*j.job.File)
@@ -179,6 +186,9 @@ func (j *UploadJob) Execute() {
 		if err != nil {
 			break
 		}
+
+		sent += int64(n)
+		metrics.UploadBytes.Add(float64(n))
 	}
 
 	if err != nil {

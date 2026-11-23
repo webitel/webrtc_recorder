@@ -20,6 +20,7 @@ import (
 
 	"github.com/webitel/wlog"
 
+	"github.com/webitel/webrtc_recorder/infra/metrics"
 	"github.com/webitel/webrtc_recorder/internal/model"
 )
 
@@ -279,6 +280,7 @@ func (s *RtcUploadMediaSession) onICEConnectionStateChange(connectionState webrt
 		s.iceConnectMs.CompareAndSwap(0, time.Since(s.createdAt).Milliseconds())
 	case webrtc.ICEConnectionStateDisconnected:
 		s.iceDisconnects.Inc()
+		metrics.SessionICEDisconnects.Inc()
 	case webrtc.ICEConnectionStateFailed:
 		// closing pc from its own callback may block, so do it asynchronously
 		go s.shutdown()
@@ -367,6 +369,7 @@ func (s *RtcUploadMediaSession) logStats() {
 			case webrtc.ICECandidateStats:
 				candidates[v.ID] = v
 			case webrtc.InboundRTPStreamStats:
+				observeInboundRTP(v)
 				fields = append(fields, wlog.Any(v.Kind, map[string]any{
 					"packets_received": v.PacketsReceived,
 					"packets_lost":     v.PacketsLost,
@@ -381,6 +384,9 @@ func (s *RtcUploadMediaSession) logStats() {
 
 		if pair != nil {
 			local, remote := candidates[pair.LocalCandidateID], candidates[pair.RemoteCandidateID]
+			metrics.SessionCandidatePair.WithLabelValues(local.CandidateType.String(), remote.CandidateType.String(),
+				remote.Protocol).Inc()
+			metrics.SessionRTT.Observe(pair.CurrentRoundTripTime)
 			fields = append(fields,
 				wlog.String("local_candidate", fmt.Sprintf("%s %s:%d", local.CandidateType, local.IP, local.Port)),
 				wlog.String("remote_candidate", fmt.Sprintf("%s %s:%d/%s", remote.CandidateType, remote.IP, remote.Port,
@@ -395,13 +401,46 @@ func (s *RtcUploadMediaSession) logStats() {
 		for _, t := range s.track {
 			lost += t.lostPackets.Load()
 			late += t.latePackets.Load()
+
+			if kind, _, ok := strings.Cut(t.MimeType, "/"); ok && (kind == "audio" || kind == "video") {
+				metrics.RTPPackets.WithLabelValues(kind, "unrecovered").Add(float64(t.lostPackets.Load()))
+				metrics.RTPPackets.WithLabelValues(kind, "late").Add(float64(t.latePackets.Load()))
+			}
 		}
 		s.mu.Unlock()
+
+		s.observeSession()
 
 		fields = append(fields, wlog.Int("unrecovered_lost", int(lost)), wlog.Int("late", int(late)))
 
 		s.log.Info("session stats", fields...)
 	})
+}
+
+func (s *RtcUploadMediaSession) observeSession() {
+	kind := "record"
+	if s.fileConfig.IsDiagnostic() {
+		kind = "diagnostic"
+	}
+
+	metrics.SessionsTotal.WithLabelValues(strings.ToLower(s.pc.ICEConnectionState().String()), kind).Inc()
+	metrics.SessionDuration.Observe(time.Since(s.createdAt).Seconds())
+
+	if ms := s.iceConnectMs.Load(); ms > 0 {
+		metrics.SessionICEConnect.Observe(float64(ms) / 1000)
+	}
+}
+
+func observeInboundRTP(v webrtc.InboundRTPStreamStats) {
+	metrics.RTPPackets.WithLabelValues(v.Kind, "received").Add(float64(v.PacketsReceived))
+
+	if v.PacketsLost > 0 {
+		metrics.RTPPackets.WithLabelValues(v.Kind, "lost").Add(float64(v.PacketsLost))
+	}
+
+	metrics.RTPFeedback.WithLabelValues(v.Kind, "nack").Add(float64(v.NACKCount))
+	metrics.RTPFeedback.WithLabelValues(v.Kind, "pli").Add(float64(v.PLICount))
+	metrics.RTPBytes.WithLabelValues(v.Kind).Add(float64(v.BytesReceived))
 }
 
 // candidateSummary counts candidates by type in an SDP, e.g. "host=2 srflx=1 relay=0":
