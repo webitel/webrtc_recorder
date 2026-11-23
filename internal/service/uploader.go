@@ -67,7 +67,12 @@ func (svc *Uploader) listen() {
 		case <-svc.ctx.Done():
 			return
 		case <-ticker.C:
-			jobs, err := svc.jobStore.Fetch(svc.limit, UploadJobName)
+			free := svc.freeSlots(svc.limit)
+			if free <= 0 {
+				continue
+			}
+
+			jobs, err := svc.jobStore.Fetch(free, UploadJobName)
 			if err != nil {
 				svc.log.Error(err.Error(), wlog.Err(err))
 				time.Sleep(time.Second)
@@ -77,6 +82,7 @@ func (svc *Uploader) listen() {
 
 			for _, job := range jobs {
 				job.Retry++
+				svc.inflight.Inc()
 				svc.pool.Exec(&UploadJob{
 					svc: svc,
 					baseJob: &baseJob{
@@ -108,6 +114,9 @@ func (j *UploadJob) Execute() {
 			j.log.Debug("success job", wlog.Duration("duration", time.Since(now)))
 			j.svc.cleanup(j.baseJob)
 		}
+
+		// release the slot only after the job state is saved, so the listener does not over-fetch
+		j.svc.inflight.Dec()
 	}()
 
 	src, err = j.svc.tempFile.NewReader(*j.job.File)
@@ -159,8 +168,6 @@ func (j *UploadJob) Execute() {
 		}
 
 		if n == 0 {
-			stream.CloseSend()
-
 			break
 		}
 
@@ -173,4 +180,13 @@ func (j *UploadJob) Execute() {
 			break
 		}
 	}
+
+	if err != nil {
+		_ = stream.CloseSend()
+
+		return
+	}
+
+	// wait for the storage response, otherwise a failed upload is treated as success and the file is deleted
+	_, err = stream.CloseAndRecv()
 }
