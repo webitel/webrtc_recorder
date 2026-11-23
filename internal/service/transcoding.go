@@ -93,7 +93,12 @@ func (svc *Transcoding) listen() {
 		case <-svc.ctx.Done():
 			return
 		case <-ticker.C:
-			jobs, err := svc.jobStore.Fetch(svc.limit, TranscodingJobName)
+			free := svc.freeSlots(svc.limit)
+			if free <= 0 {
+				continue
+			}
+
+			jobs, err := svc.jobStore.Fetch(free, TranscodingJobName)
 			if err != nil {
 				svc.log.Error(err.Error(), wlog.Err(err))
 				time.Sleep(time.Second)
@@ -103,6 +108,7 @@ func (svc *Transcoding) listen() {
 
 			for _, job := range jobs {
 				job.Retry++
+				svc.inflight.Inc()
 				svc.pool.Exec(&transcodingJob{
 					svc: svc,
 					baseJob: &baseJob{
@@ -135,6 +141,9 @@ func (j *transcodingJob) Execute() {
 			j.log.Debug("success job", wlog.Duration("duration", time.Since(now)))
 			j.svc.successJob(j, &mp4File)
 		}
+
+		// release the slot only after the job state is saved, so the listener does not over-fetch
+		j.svc.inflight.Dec()
 	}()
 
 	err = j.svc.tempFile.NewFilePath(&mp4File, "mp4")
