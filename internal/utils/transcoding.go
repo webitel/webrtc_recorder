@@ -185,7 +185,7 @@ func transcodingArgs(src []model.MediaChannel, videoScale float64) ([]string, []
 	return inputArgs, finalArgs
 }
 
-func TranscodingByPath(src []model.MediaChannel, dst string, actualDurationMs int) (int, error) {
+func TranscodingByPath(src []model.MediaChannel, dst string, actualDurationMs int, preset string) (int, error) {
 	var videoScale = 1.0
 
 	for _, ch := range src {
@@ -223,7 +223,7 @@ func TranscodingByPath(src []model.MediaChannel, dst string, actualDurationMs in
 
 		"-c:v", "libx264",
 		"-tune", "animation",
-		"-preset", "fast",
+		"-preset", preset,
 		"-movflags",
 		"+faststart",
 		"-f", "mp4",

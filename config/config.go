@@ -20,6 +20,7 @@ type TranscodingSettings struct {
 	Workers  int
 	Queue    int
 	MaxRetry int
+	Preset   string
 }
 
 type UploaderSettings struct {
