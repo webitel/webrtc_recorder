@@ -26,6 +26,7 @@ type Transcoding struct {
 
 	limit    int
 	maxRetry int
+	preset   string
 	pool     *utils.Pool
 	uploader *Uploader
 }
@@ -46,6 +47,7 @@ func NewTranscoding(ctx context.Context, cfg *config.Config, log *wlog.Logger, f
 		},
 		uploader: upl,
 		maxRetry: cfg.Transcoding.MaxRetry,
+		preset:   cfg.Transcoding.Preset,
 		limit:    cfg.Transcoding.Queue + cfg.Transcoding.Workers,
 		pool:     utils.NewPool(ctx, cfg.Transcoding.Workers, cfg.Transcoding.Queue),
 	}
@@ -152,7 +154,7 @@ func (j *transcodingJob) Execute() {
 	}
 	actualDurationMs := j.job.File.EndTime - j.job.File.StartTime
 	var durationMs int
-	durationMs, err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path, actualDurationMs)
+	durationMs, err = utils.TranscodingByPath(j.job.File.Track, mp4File.Path, actualDurationMs, j.svc.preset)
 
 	if err != nil {
 		_ = j.svc.tempFile.DeleteFile(&mp4File)
