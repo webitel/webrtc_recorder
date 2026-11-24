@@ -256,6 +256,7 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 				case "ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow":
 					return nil
 				}
+
 				return fmt.Errorf("invalid transcoding-preset %q", v)
 			},
 		},
