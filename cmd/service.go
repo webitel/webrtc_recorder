@@ -244,5 +244,20 @@ func apiFlags(cfg *config.Config) []cli.Flag {
 			EnvVars:     []string{"TRANSCODING_MAX_RETRY"},
 			Destination: &cfg.Transcoding.MaxRetry,
 		},
+		&cli.StringFlag{
+			Name:        "transcoding-preset",
+			Category:    "transcoding",
+			Usage:       "libx264 preset: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow",
+			Value:       "fast",
+			EnvVars:     []string{"TRANSCODING_PRESET"},
+			Destination: &cfg.Transcoding.Preset,
+			Action: func(_ *cli.Context, v string) error {
+				switch v {
+				case "ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow":
+					return nil
+				}
+				return fmt.Errorf("invalid transcoding-preset %q", v)
+			},
+		},
 	}
 }
